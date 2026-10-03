@@ -53,7 +53,8 @@ service cloud.firestore {
         authEmail() in [
           'merfinhanson@gmail.com',
           'hameedafsar@gmail.com',
-          'meharbasha@gmail.com'
+          'meharbasha@gmail.com',
+          '240071601263@crescent.education'
         ]
       );
     }

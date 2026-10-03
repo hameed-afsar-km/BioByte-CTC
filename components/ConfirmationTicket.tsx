@@ -220,6 +220,14 @@ export default function ConfirmationTicket() {
 
         {/* ---------------- next steps ---------------- */}
         <ol className="confirm-steps">
+          <li className="card bracket" style={{ borderColor: 'var(--color-omni)', boxShadow: '0 0 20px rgba(124,252,0,0.15)' }}>
+            <span className="step-index">00</span>
+            <h3 style={{ color: 'var(--color-omni)' }}>Join the WhatsApp Group</h3>
+            <p>You have successfully registered! All critical updates will be posted here.</p>
+            <a href="https://chat.whatsapp.com/DC9S6tcrU4lH2Y5ayqiAlC" target="_blank" rel="noreferrer" className="btn btn-primary" style={{ marginTop: '1rem', width: 'fit-content' }}>
+              Join WhatsApp Group
+            </a>
+          </li>
           <li className="card bracket">
             <span className="step-index">01</span>
             <h3>Keep the deck ready</h3>
