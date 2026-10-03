@@ -123,6 +123,9 @@ export default function MissionModal({
           <h3 className="file-subhead">Mission</h3>
           <p className="file-summary">{problem.summary}</p>
 
+          <h3 className="file-subhead">Expected Output</h3>
+          <p className="file-summary">{problem.expectedOutput}</p>
+
           <h3 className="file-subhead">Build targets</h3>
           <ul className="file-points">
             {problem.points.map((point) => (

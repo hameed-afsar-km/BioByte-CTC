@@ -7,8 +7,8 @@ const HIGHLIGHTS = [
   {
     key: "bio",
     icon: FlaskConical,
-    title: "Biotechnology",
-    text: "Tackle real-world challenges in bioprocess, imaging, environmental sensing, and drug discovery.",
+    title: "Multi-Disciplinary Core",
+    text: "Tackle real-world challenges across multiple engineering and science domains.",
   },
   {
     key: "data",
@@ -36,7 +36,7 @@ export default function About() {
       <SectionHead
         kicker="About"
         title="The Expo"
-        sub={`${EVENT.name} is a premier biotechnology and computer science project expo by ${EVENT.presenter}. Teams of ${EVENT.teamSize} select a track and transform an idea into a working prototype that deserves the stage.`}
+        sub={`${EVENT.name} is a premier multi-disciplinary project expo by ${EVENT.presenter}. Teams of ${EVENT.teamSize} select a track and transform an idea into a working prototype that deserves the stage.`}
         centered
       />
 

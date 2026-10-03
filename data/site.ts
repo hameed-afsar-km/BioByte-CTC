@@ -17,7 +17,7 @@ export const EVENT = {
   tagline: "It's time to transform.",
   presenter: "Crescent Technocrats Club",
   blurb:
-    "A one-day biotech hackathon. Teams pick an alien track, build working tools for real problems in bioprocessing, imaging and drug discovery, then demo them the same day.",
+    "A multi-disciplinary project expo. Teams pick an alien track, build working tools for real problems, then demo them the same day.",
   time: "9:00 AM – 4:10 PM",
   /**
    * Event day. `null` = not announced yet; the countdown falls back to a
@@ -46,7 +46,7 @@ export const PILLARS: Pillar[] = [
     key: "scout",
     icon: "radar",
     title: "Scout",
-    text: "Sweep real biotech frontiers — bioprocess, imaging, fermentation, environmental sensing and drug discovery.",
+    text: "Sweep real multi-disciplinary frontiers — engineering, sciences, design, and analytics.",
   },
   {
     key: "decode",
@@ -94,6 +94,7 @@ export type Problem = {
   domain: string;
   title: string;
   summary: string;
+  expectedOutput: string;
   points: string[];
 };
 
@@ -114,6 +115,7 @@ export const PROBLEMS: Problem[] = [
     title: "Cold Chain Guardian",
     summary:
       "Build a smart package for temperature-sensitive biologics that logs excursions, predicts whether the drug is still usable, and alerts the right person.",
+    expectedOutput: "A smart cold-chain system that continuously monitors and records temperature conditions, detects excursions, uses predictive models to assess whether the product remains within acceptable limits, provides real-time alerts, and maintains a digital record.",
     points: [
       "Continuously log temperature across the whole shipping journey",
       "Predict remaining viability from cumulative thermal exposure",
@@ -136,6 +138,7 @@ export const PROBLEMS: Problem[] = [
     title: "Bench-Top Smart Bioreactor",
     summary:
       "Make a low-cost lab bioreactor that automatically controls temperature, pH, dissolved oxygen and agitation, with a model that predicts growth and flags deviations early.",
+    expectedOutput: "A low-cost bench-top bioreactor that automatically monitors and controls critical parameters (temperature, pH, dissolved oxygen, agitation), integrated with a predictive model to estimate growth, detect abnormal trends, and provide early warnings of process deviations.",
     points: [
       "Closed-loop control of temperature, pH, dissolved oxygen and agitation",
       "A model that predicts growth and flags deviation early",
@@ -158,6 +161,7 @@ export const PROBLEMS: Problem[] = [
     title: "Pocket Microscope for Rural Labs",
     summary:
       "Design an affordable smartphone-based microscope setup with AI that counts and classifies cells and flags abnormalities.",
+    expectedOutput: "An affordable, portable smartphone-based microscope setup with an AI system capable of counting and classifying cells, identifying predefined abnormalities, and providing simple analysis suitable for low-resource environments.",
     points: [
       "An affordable optical and mechanical setup that works with a phone",
       "Counting and classifying cells straight from the captured field",
@@ -180,6 +184,7 @@ export const PROBLEMS: Problem[] = [
     title: "Biomedical Waste Sorter",
     summary:
       "Build a system that identifies and segregates hospital waste and verifies safe sterilisation or disposal.",
+    expectedOutput: "An intelligent system that identifies and automatically segregates different categories of biomedical waste using computer vision or sensors, incorporates a method to monitor or verify appropriate sterilization or disposal, and improves traceability.",
     points: [
       "Identifying and segregating waste at the point of collection",
       "Verifying sterilisation actually happened, not just that it was logged",
@@ -202,6 +207,7 @@ export const PROBLEMS: Problem[] = [
     title: "Crop Health Scout",
     summary:
       "Develop a drone or rover that scans fields for early plant disease and soil stress, and recommends action to farmers.",
+    expectedOutput: "A drone- or rover-based system that collects visual and environmental data, uses AI to identify potential crop-health issues (diseases, nutrient deficiencies, water stress), maps affected areas, and provides actionable recommendations to farmers.",
     points: [
       "A drone or rover that covers ground faster than a person can walk",
       "Early detection of plant disease and soil stress",
@@ -280,8 +286,8 @@ export const RULES = [
 export const PROTOCOL = [
   { step: "Mon, 5 Oct", title: "Registration Opens", text: "Problem statements are revealed and website registration begins." },
   { step: "Tue, 6 Oct", title: "Registration & PPT Deadline", text: "Registration and PPT submission closes strictly at 11:59 PM." },
-  { step: "Wed, 7 Oct", title: "Evaluation Phase", text: "All submissions are reviewed by the technical judging panel." },
-  { step: "Thu, 8 Oct", title: "Shortlisting", text: "Shortlisted teams announced, payment collected, and prototype prep begins." },
+  { step: "Wed, 7 Oct", title: "Shortlisting & Payment", text: "Shortlisted teams are announced and payment is collected from the selected teams." },
+  { step: "7 - 8 Oct", title: "Building the Prototype/MVP", text: "Teams begin building their working prototypes and MVPs for their selected track." },
   { step: "Fri, 9 Oct", title: "Final Demo", text: "Final judging, prototype demonstrations, and afternoon awards ceremony." },
 ];
 
@@ -375,8 +381,8 @@ export const NAV_ITEMS = [
 /* ---- Marquee copy ---- */
 export const TICKER_WORDS = [
   "Project Expo",
-  "Biotechnology",
-  "Computer Science",
+  "Multi-Disciplinary",
+  "Engineering",
   "Prototypes",
   "Innovation",
   "Hardware",

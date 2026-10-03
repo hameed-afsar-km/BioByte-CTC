@@ -19,7 +19,7 @@ export default function Hero() {
           />
 
           <p className="hero-description" style={{ fontSize: '1.15rem', color: 'var(--color-mist)', maxWidth: '600px', margin: '0 auto 2.5rem', lineHeight: 1.6 }}>
-            BioByte is a premier biotech and computer science project expo. Assemble your ultimate crew, dive into cutting-edge challenges, and build innovative prototypes that push the boundaries of modern technology.
+            BioByte is a premier multi-disciplinary project expo. Assemble your ultimate crew, dive into cutting-edge challenges, and build innovative prototypes that push the boundaries of modern technology.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '3rem', gap: '0.5rem' }}>

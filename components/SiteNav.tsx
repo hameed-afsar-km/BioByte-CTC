@@ -90,7 +90,7 @@ export default function SiteNav() {
           </div>
 
           <div className="navbar-actions">
-            <a className="btn btn-primary btn-sm" href="/register">
+            <a className="btn btn-primary btn-sm" href="/register" style={{ borderRadius: '50px' }}>
               <Zap size={15} aria-hidden="true" />
               Register Now
             </a>

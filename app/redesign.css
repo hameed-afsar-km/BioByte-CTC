@@ -38,9 +38,16 @@ body::before {
 
 .hero { 
   isolation: isolate; 
-  min-height: min(900px, 100svh); 
-  padding-block: calc(var(--nav-h) + 3.5rem) 5rem; 
+  height: 100svh !important;
+  min-height: 100svh !important;
+  max-height: 100svh !important;
+  padding-top: calc(var(--nav-h) + 1rem) !important; 
+  padding-bottom: 1rem !important;
   background: #020a04; 
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  overflow: hidden !important;
 }
 
 /* VERY IMPORTANT: KEEPING THE BACKGROUND AS REQUESTED */
@@ -52,7 +59,7 @@ body::before {
   position: absolute;
   inset: 0;
   z-index: -1;
-  opacity: 0.8;
+  opacity: 1;
 }
 
 @media (min-width: 768px) {
@@ -63,8 +70,8 @@ body::before {
 }
 
 .hero-vignette { 
-  background: linear-gradient(180deg, rgb(1 7 3 / 0.8), transparent 30%, rgb(1 7 3 / 0.95)),
-              radial-gradient(circle at center, transparent 10%, rgb(1 7 3 / 0.7) 78%) !important; 
+  background: linear-gradient(180deg, rgb(1 7 3 / 0.4), transparent 20%, rgb(1 7 3 / 0.7)),
+              radial-gradient(circle at center, transparent 20%, rgb(1 7 3 / 0.5) 80%) !important; 
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -72,12 +79,20 @@ body::before {
 
 .hero-content { 
   max-width: 880px; 
-  margin: 0 auto !important; 
+  margin: auto !important; 
+}
+
+.hero-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
 }
 
 .hero-logo { 
-  max-width: min(590px, 92vw) !important;
-  margin-bottom: 1.35rem !important;
+  max-width: min(500px, 92vw) !important;
+  margin-bottom: 0.5rem !important;
   filter: drop-shadow(0 0 35px rgb(124 252 0 / 0.6)) drop-shadow(0 0 10px rgb(124 252 0 / 0.8)); 
   animation: float-logo 4s ease-in-out infinite alternate;
 }
@@ -88,15 +103,31 @@ body::before {
 }
 
 /* 3. Holographic Timer (No box) */
-.countdown { gap: 1.2rem !important; }
-.countdown-unit { min-width: 48px !important; align-items: start; }
+.countdown { gap: 0.8rem !important; margin-bottom: 1rem !important; }
+.countdown-unit { min-width: 40px !important; align-items: start; }
 .countdown-num { 
-  font-size: clamp(2rem, 5vw, 3.5rem) !important; 
+  font-size: clamp(1.5rem, 4vw, 2.5rem) !important; 
   color: var(--color-omni-bright) !important;
   text-shadow: 0 0 10px var(--color-omni), 0 0 30px var(--color-omni) !important;
   animation: holo-pulse 2s infinite alternate !important;
 }
-.countdown-label { margin-top: 0.25rem !important; font-size: 0.65rem !important; color: var(--color-omni) !important; }
+.countdown-label { margin-top: 0.25rem !important; font-size: 0.55rem !important; color: var(--color-omni) !important; }
+
+/* 4. Scroll indicator fix */
+.hero-foot {
+  margin-top: auto !important;
+  padding-bottom: 0 !important;
+  flex-shrink: 0;
+}
+
+/* Shrink buttons to prevent overlap */
+.hero-actions .btn {
+  padding: 0.75rem 1.5rem !important;
+  font-size: 0.85rem !important;
+}
+.hero-actions {
+  gap: 0.75rem !important;
+}
 
 @keyframes holo-pulse {
   0% { text-shadow: 0 0 10px var(--color-omni), 0 0 20px var(--color-omni); opacity: 0.85; }
@@ -535,163 +566,108 @@ body::before {
 /* =======================================
    Prizes Redesign (Podium Layout)
    ======================================= */
-.prize-podium-container {
-  display: flex;
-  flex-direction: column;
-  gap: 3rem;
+.prize-grid-container {
   width: min(1000px, 100%);
   margin: 0 auto;
 }
 
-.prize-podium {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 1.5rem;
+.prize-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
   margin-top: 2rem;
 }
 
-.podium-card {
+.prize-hologram-card {
   position: relative;
-  background: var(--glass-dark);
+  background: rgba(2, 10, 4, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  text-align: center;
-  padding: 2.5rem 1rem;
-  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: inset 0 0 20px rgba(124, 252, 0, 0.05), 0 10px 30px rgba(0, 0, 0, 0.5);
-  flex: 1;
-  max-width: 300px;
+  padding: 2.5rem;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.podium-first {
-  padding: 3.5rem 1.5rem;
-  transform: translateY(-2rem);
-  z-index: 2;
-  box-shadow: inset 0 0 30px rgba(124, 252, 0, 0.1), 0 20px 40px rgba(0, 0, 0, 0.6);
-  border-color: rgba(124, 252, 0, 0.4);
-}
-
-.podium-card:hover {
+.prize-hologram-card:hover {
   border-color: var(--hue);
-  box-shadow: inset 0 0 40px color-mix(in srgb, var(--hue) 15%, transparent), 0 20px 50px rgba(0, 0, 0, 0.6);
-}
-
-.podium-first:hover {
-  transform: translateY(-2.5rem);
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), inset 0 0 40px color-mix(in srgb, var(--hue) 15%, transparent);
 }
 
 .prize-glow {
   position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 150px;
-  height: 150px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--hue) 20%, transparent) 0%, transparent 70%);
+  top: -50px;
+  right: -50px;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--hue) 20%, transparent) 0%, transparent 60%);
   z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+  transition: opacity 0.4s ease;
 }
 
-.podium-content {
+.prize-hologram-card:hover .prize-glow {
+  opacity: 1;
+}
+
+.prize-hologram-content {
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
+}
+
+.prize-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .prize-place {
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 0.8rem;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--hue);
+  color: var(--color-mist-3);
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prize-alien {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .prize-amount {
   font-family: var(--font-display);
-  font-size: 3rem;
+  font-size: 3.5rem;
   line-height: 1;
   color: #fff;
   text-shadow: 0 0 20px var(--hue);
-  margin-block: 0.5rem;
-}
-
-.podium-first .prize-amount {
-  font-size: 4rem;
+  margin-block: 0;
 }
 
 .prize-divider {
-  width: 40px;
-  height: 2px;
-  background: var(--hue);
-  margin-block: 1rem;
-}
-
-.prize-alien {
-  font-weight: 700;
-  font-size: 1.2rem;
-  color: #fff;
-  text-transform: uppercase;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--hue), transparent);
+  margin-block: 1.5rem;
 }
 
 .prize-text {
   color: var(--color-mist-2);
   font-size: 0.95rem;
-}
-
-/* 4th Prize Special Card */
-.prize-special-wrapper {
-  display: flex;
-  justify-content: center;
-}
-
-.prize-special-card {
-  max-width: 600px;
-  width: 100%;
-  padding: 2rem;
-}
-
-.special-content {
-  flex-direction: row;
-  text-align: left;
-  justify-content: space-between;
-  gap: 2rem;
-}
-
-.special-left, .special-right {
-  display: flex;
-  flex-direction: column;
-}
-
-@media (max-width: 768px) {
-  .prize-podium {
-    flex-direction: column;
-    align-items: center;
-  }
-  .podium-first {
-    order: -1;
-    transform: none;
-    width: 100%;
-    max-width: 100%;
-  }
-  .podium-card {
-    width: 100%;
-    max-width: 100%;
-  }
-  .podium-first:hover {
-    transform: translateY(-5px);
-  }
-  .special-content {
-    flex-direction: column;
-    text-align: center;
-  }
+  line-height: 1.5;
 }
 
 /* =======================================
@@ -741,7 +717,8 @@ body::before {
   transition: all 0.4s ease;
 }
 
-.new-timeline-node.is-active .new-timeline-dot {
+.new-timeline-node.is-active .new-timeline-dot,
+.new-timeline-node.is-complete .new-timeline-dot {
   border-color: var(--color-omni);
   color: var(--color-omni);
   box-shadow: 0 0 20px var(--color-omni);
@@ -757,7 +734,8 @@ body::before {
   transition: background 0.4s ease;
 }
 
-.new-timeline-node.is-active .new-timeline-line {
+.new-timeline-node.is-active .new-timeline-line,
+.new-timeline-node.is-complete .new-timeline-line {
   background: linear-gradient(to bottom, var(--color-omni), var(--glass-border));
 }
 
@@ -770,7 +748,8 @@ body::before {
   transition: all 0.4s ease;
 }
 
-.new-timeline-node.is-active .new-timeline-content {
+.new-timeline-node.is-active .new-timeline-content,
+.new-timeline-node.is-complete .new-timeline-content {
   border-color: rgba(124, 252, 0, 0.3);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
@@ -819,7 +798,7 @@ body::before {
   transform: translateX(-50%);
   width: 80vw;
   height: 80vw;
-  background: radial-gradient(circle, rgba(124, 252, 0, 0.1) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(124, 252, 0, 0.25) 0%, transparent 60%);
   pointer-events: none;
   z-index: -1;
 }
@@ -1104,4 +1083,126 @@ body::before {
   justify-content: flex-end !important;
   gap: 1.5rem !important;
   align-items: center !important;
+}
+
+/* =======================================
+   Section Backgrounds
+   ======================================= */
+.section:not(.hero):not(#prizes) {
+  position: relative;
+  z-index: 1;
+}
+
+/* =======================================
+   Unique Section Backgrounds
+   ======================================= */
+.section {
+  position: relative;
+  overflow: hidden !important;
+}
+
+/* 1. Missions (#problems): Radar pulse */
+@keyframes radar-pulse {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { opacity: 0.15; }
+  100% { transform: scale(2); opacity: 0; }
+}
+#problems::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 800px;
+  height: 800px;
+  margin-top: -400px;
+  margin-left: -400px;
+  border-radius: 50%;
+  box-shadow: 0 0 100px rgba(124, 252, 0, 0.4) inset;
+  animation: radar-pulse 6s ease-out infinite;
+  pointer-events: none;
+  z-index: -2;
+}
+
+/* 2. Timeline (#timeline): Vertical streams */
+@keyframes stream-down {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+#timeline::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(124, 252, 0, 0.05) 100px, rgba(124, 252, 0, 0.05) 101px);
+  pointer-events: none;
+  z-index: -2;
+}
+#timeline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(124, 252, 0, 0.15) 50%, transparent);
+  animation: stream-down 8s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 3. FAQ (#faq): Diagonal cyber-lines */
+@keyframes diagonal-pan {
+  0% { background-position: 0 0; }
+  100% { background-position: 100px 100px; }
+}
+#faq::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, rgba(124, 252, 0, 0.03) 0, rgba(124, 252, 0, 0.03) 1px, transparent 1px, transparent 20px);
+  background-size: 200% 200%;
+  animation: diagonal-pan 15s linear infinite;
+  pointer-events: none;
+  z-index: -2;
+}
+
+/* 4. Core Team / Contact (#core-team, #contact): Floating Orbs */
+@keyframes float-orbs {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, 30px); }
+}
+#core-team::before, #contact::before {
+  content: "";
+  position: absolute;
+  top: 10%;
+  left: 20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(124, 252, 0, 0.08) 0%, transparent 60%);
+  animation: float-orbs 10s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -2;
+}
+#core-team::after, #contact::after {
+  content: "";
+  position: absolute;
+  bottom: 10%;
+  right: 20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(46, 230, 214, 0.06) 0%, transparent 60%);
+  animation: float-orbs 12s ease-in-out infinite reverse;
+  pointer-events: none;
+  z-index: -2;
+}
+
+/* =======================================
+   Enforce 100vh Sections
+   ======================================= */
+.section {
+  min-height: 100svh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+/* Ensure inner content containers don't break flex layout */
+.section-inner {
+  width: 100%;
 }

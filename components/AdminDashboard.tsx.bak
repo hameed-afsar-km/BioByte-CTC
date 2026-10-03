@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -14,7 +14,7 @@ import {
   ShieldAlert,
   Trash2,
   TriangleAlert,
-  Users
+  Users,
 } from "lucide-react";
 import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from "firebase/auth";
 import { PROBLEMS } from "@/data/site";
@@ -23,7 +23,7 @@ import { isAdminEmail } from "@/lib/access";
 import {
   deleteRegistration,
   fetchRegistrations,
-  updateRegistrationStatus
+  updateRegistrationStatus,
 } from "@/lib/registrations";
 import type { RegistrationRecord } from "@/lib/types";
 import OmnitrixMark from "./OmnitrixMark";
@@ -35,8 +35,7 @@ const STATUSES: RegistrationRecord["status"][] = ["registered", "shortlisted", "
 const STATUS_LABEL: Record<RegistrationRecord["status"], string> = {
   registered: "Registered",
   shortlisted: "Shortlisted",
-  rejected: "Rejected"
-};
+  rejected: "Rejected";
 
 function csvCell(value: unknown) {
   const text = String(value ?? "");
@@ -149,9 +148,8 @@ export default function AdminDashboard() {
       teams: records.length,
       capacity,
       people: records.reduce((sum, record) => sum + (record.teamSize ?? 0), 0),
-      shortlisted: records.filter((record) => record.status === "shortlisted").length
-    };
-  }, [records]);
+      shortlisted: records.filter((record) => record.status === "shortlisted").length;
+  }, [records, slots]);
 
   const exportCsv = () => {
     const header = [
@@ -336,8 +334,7 @@ export default function AdminDashboard() {
             <span className="tile-value">
               {
                 PROBLEMS.filter((problem) => {
-                  const count = records.filter(r => r.problemId === problem.id && r.status !== "rejected").length;
-                  return count >= 9999;
+                  return (slot?.count ?? 0) >= (slot?.capacity ?? problem.capacity);
                 }).length
               }
             </span>
@@ -347,27 +344,19 @@ export default function AdminDashboard() {
 
         {/* ---------------- capacity ---------------- */}
         <section className="admin-panel card bracket">
-          <ul className="capacity-list">
             {PROBLEMS.map((problem) => {
-              const capacity = 9999;
-              const count = records.filter(
-                (r) => r.problemId === problem.id && r.status !== "rejected"
-              ).length;
 
               return (
                 <li
                   key={problem.id}
                   style={{ "--hue": problem.hue } as React.CSSProperties}
-                  className="capacity-item"
                 >
-                  <span className="capacity-name">
                     <b style={{ color: problem.hue }}>{problem.alien}</b>
                     <em>{problem.id}</em>
                   </span>
-                  <span className="capacity-count">
+                  </span>
                     {count} / {capacity}
                   </span>
-                  <label className="capacity-control">
                     <span className="sr-only">Capacity for {problem.alien}</span>
                     <input
                       type="number"
@@ -500,7 +489,6 @@ export default function AdminDashboard() {
                                     records: current.records.map((row) =>
                                       row.id === record.id ? { ...row, status: next } : row,
                                     )
-                                  }
                                 : current,
                             );
                             updateRegistrationStatus(record.id, next).catch(() => refresh());
@@ -541,5 +529,7 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+
 
 

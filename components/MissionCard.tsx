@@ -39,7 +39,7 @@ export default function MissionCard({
           <div className="mission-footer">
             <button type="button" className="mission-action-btn" onClick={() => onOpen(problem.id)}>
               <FileText size={16} className="btn-icon" />
-              <span>ACCESS DOSSIER</span>
+              <span>EXPAND DETAILS</span>
               <ArrowUpRight size={16} className="btn-icon" />
             </button>
           </div>

@@ -48,7 +48,7 @@ import {
   validateDraft,
 } from "@/lib/validation";
 import { consumePendingTrack, SELECT_TRACK_EVENT } from "@/lib/registerGate";
-import type { FieldErrors, Member, SlotSummary } from "@/lib/types";
+import type { FieldErrors, Member } from "@/lib/types";
 import Reveal from "./Reveal";
 import SectionHead from "./SectionHead";
 import TrackConfirmModal from "./TrackConfirmModal";
@@ -666,7 +666,7 @@ export default function Registration() {
                         <input
                           id={`m-${index}-course`}
                           className="input"
-                          placeholder="e.g. B.Tech Biotech"
+                          placeholder="e.g. B.Tech IT"
                           value={member.course}
                           onChange={updateMember(index, "course")}
                         />

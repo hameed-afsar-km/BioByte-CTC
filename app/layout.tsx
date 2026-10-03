@@ -22,24 +22,23 @@ const chakra = Chakra_Petch({
 export const metadata: Metadata = {
   metadataBase: new URL("https://omnicon.vercel.app"),
   title: {
-    default: "OMNICON — It's Time To Transform",
-    template: "%s · OMNICON",
+    default: "BioByte",
+    template: "%s · BioByte",
   },
   description:
-    "OMNICON is a one-day biotech hackathon by Crescent Technocrats Club. Pick an alien track, build a working prototype and demo it the same day.",
+    "BioByte is a premier multi-disciplinary project expo by Crescent Technocrats Club. Assemble your crew, dive into cutting-edge challenges, and build innovative prototypes.",
   keywords: [
-    "OMNICON",
+    "BioByte",
     "BEN 10",
-    "hackathon",
-    "biotech",
-    "biotechnology",
+    "project expo",
+    "multi-disciplinary",
     "Crescent Technocrats Club",
-    "student hackathon",
+    "student expo",
   ],
   openGraph: {
-    title: "OMNICON — It's Time To Transform",
+    title: "BioByte",
     description:
-      "A one-day biotech hackathon. Five alien tracks, teams of 2 to 4, one working build.",
+      "A premier multi-disciplinary project expo. Five alien tracks, teams of 2 to 4, one working build.",
     type: "website",
   },
   icons: {
