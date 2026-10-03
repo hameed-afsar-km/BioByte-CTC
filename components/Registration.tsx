@@ -774,7 +774,16 @@ export default function Registration() {
                     <p className="field-error">{fieldErrors.problemId}</p>
                   ) : (
                     <p className="field-hint">
-                      Pick a track to review its mission file before you confirm it.
+                      Pick a track to review its mission file before you confirm it.{" "}
+                      <a
+                        href="/PPT-Template.pptx"
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Download the required PPT template
+                      </a>{" "}
+                      and strictly follow it when uploading your Round 1 PPT.
                     </p>
                   )}
                 </div>
@@ -790,7 +799,7 @@ export default function Registration() {
                       {form.ppt ? form.ppt.name : "Attach your Round 1 PPT"}
                     </span>
                     <span className="upload-hint">
-                      .ppt, .pptx or .pdf — max {MAX_PPT_BYTES / (1024 * 1024)} MB
+                      .ppt, .pptx or .pdf — max {MAX_PPT_BYTES / (1024 * 1024)} MB. Use the provided template exactly as is.
                     </span>
                     <input
                       type="file"

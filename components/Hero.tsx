@@ -1,4 +1,4 @@
-import { ArrowDown, Zap, FileText } from "lucide-react";
+import { ArrowDown, Download, FileText, Zap } from "lucide-react";
 import { EVENT } from "@/data/site";
 import Countdown from "./Countdown";
 
@@ -35,6 +35,16 @@ export default function Hero() {
             <a className="btn btn-secondary" href="#problems">
               <FileText size={17} aria-hidden="true" />
               Problem Statements
+            </a>
+            <a
+              className="btn btn-ghost"
+              href="/PPT-Template.pptx"
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+            >
+              <Download size={17} aria-hidden="true" />
+              Download PPT Template
             </a>
           </div>
         </div>

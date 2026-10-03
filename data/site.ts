@@ -279,8 +279,8 @@ export const RULES = [
 /* ---- Transformation protocol (Timeline) ---- */
 export const PROTOCOL = [
   { step: "Mon, 5 Oct", title: "Registration Opens", text: "Problem statements are revealed and website registration begins." },
-  { step: "Tue, 6 Oct", title: "Preparation", text: "Teams prepare their Round 1 PPTs using the CTC mock template." },
-  { step: "Wed, 7 Oct", title: "PPT Deadline", text: "PPT submission closes strictly at 11:59 PM." },
+  { step: "Tue, 6 Oct", title: "Registration & PPT Deadline", text: "Registration and PPT submission closes strictly at 11:59 PM." },
+  { step: "Wed, 7 Oct", title: "Evaluation Phase", text: "All submissions are reviewed by the technical judging panel." },
   { step: "Thu, 8 Oct", title: "Shortlisting", text: "Shortlisted teams announced, payment collected, and prototype prep begins." },
   { step: "Fri, 9 Oct", title: "Final Demo", text: "Final judging, prototype demonstrations, and afternoon awards ceremony." },
 ];

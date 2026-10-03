@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -14,8 +14,7 @@ import {
   ShieldAlert,
   Trash2,
   TriangleAlert,
-  Users,
-} from "lucide-react";
+  Users from "lucide-react";
 import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from "firebase/auth";
 import { PROBLEMS } from "@/data/site";
 import { auth, isFirebaseReady, missingFirebaseKeys } from "@/lib/firebase";
@@ -23,11 +22,8 @@ import { isAdminEmail } from "@/lib/access";
 import {
   deleteRegistration,
   fetchRegistrations,
-  fetchSlots,
-  updateRegistrationStatus,
-  updateTrackCapacity,
-} from "@/lib/registrations";
-import type { RegistrationRecord, SlotSummary } from "@/lib/types";
+  updateRegistrationStatus from "@/lib/registrations";
+import type { RegistrationRecord } from "@/lib/types";
 import OmnitrixMark from "./OmnitrixMark";
 
 type SortKey = "newest" | "team" | "track";
@@ -37,8 +33,7 @@ const STATUSES: RegistrationRecord["status"][] = ["registered", "shortlisted", "
 const STATUS_LABEL: Record<RegistrationRecord["status"], string> = {
   registered: "Registered",
   shortlisted: "Shortlisted",
-  rejected: "Rejected",
-};
+  rejected: "Rejected";
 
 function csvCell(value: unknown) {
   const text = String(value ?? "");
@@ -47,12 +42,11 @@ function csvCell(value: unknown) {
 
 /** Stable empty references, so `data?.records ?? EMPTY` keeps its identity. */
 const NO_RECORDS: RegistrationRecord[] = [];
-const NO_SLOTS: SlotSummary = {};
 
 /** One round trip for everything the dashboard shows. No state, no side effects. */
 async function readDashboard() {
-  const [records, slots] = await Promise.all([fetchRegistrations(), fetchSlots()]);
-  return { records, slots };
+  const records = await fetchRegistrations();
+  return { records };
 }
 
 export default function AdminDashboard() {
@@ -60,8 +54,7 @@ export default function AdminDashboard() {
   const [user, setUser] = useState<{ email: string | null } | null | undefined>(undefined);
   const [data, setData] = useState<{
     records: RegistrationRecord[];
-    slots: SlotSummary;
-    key: number;
+      key: number;
   } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -70,7 +63,7 @@ export default function AdminDashboard() {
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  /* Bumping this re-runs the load effect — the manual refresh button. */
+  /* Bumping this re-runs the load effect â€” the manual refresh button. */
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((key) => key + 1);
 
@@ -81,7 +74,7 @@ export default function AdminDashboard() {
      on hand is missing or was loaded for an older request key. */
   const loading = isAdmin && (!data || data.key !== refreshKey);
   const records = data?.records ?? NO_RECORDS;
-  const slots = data?.slots ?? NO_SLOTS;
+
 
   useEffect(() => {
     if (!isFirebaseReady) return undefined;
@@ -148,16 +141,12 @@ export default function AdminDashboard() {
   }, [records, search, trackFilter, sort]);
 
   const totals = useMemo(() => {
-    const capacity = PROBLEMS.reduce(
-      (sum, problem) => sum + (slots[problem.id]?.capacity ?? problem.capacity),
-      0,
-    );
+    const capacity = PROBLEMS.length * 9999;
     return {
       teams: records.length,
       capacity,
       people: records.reduce((sum, record) => sum + (record.teamSize ?? 0), 0),
-      shortlisted: records.filter((record) => record.status === "shortlisted").length,
-    };
+      shortlisted: records.filter((record) => record.status === "shortlisted").length;
   }, [records, slots]);
 
   const exportCsv = () => {
@@ -188,7 +177,7 @@ export default function AdminDashboard() {
       record.members?.map((member) => member.name).join(", "),
       record.members?.[0]?.phone ?? "",
       record.emailId,
-      `${record.problemId} — ${record.alien}`,
+      `${record.problemId} â€” ${record.alien}`,
       record.problemTitle,
       record.abstract,
       record.pptUrl ?? "",
@@ -211,7 +200,7 @@ export default function AdminDashboard() {
     return (
       <div className="admin-shell">
         <p className="page-loading">
-          <LoaderCircle size={16} className="spin" /> Linking…
+          <LoaderCircle size={16} className="spin" /> Linkingâ€¦
         </p>
       </div>
     );
@@ -257,7 +246,7 @@ export default function AdminDashboard() {
                 disabled={signingIn}
               >
                 {signingIn ? <LoaderCircle size={16} className="spin" /> : <BadgeCheck size={16} />}
-                {signingIn ? "Signing in…" : "Sign in with Google"}
+                {signingIn ? "Signing inâ€¦" : "Sign in with Google"}
               </button>
             ) : (
               <button type="button" className="btn btn-secondary" onClick={() => signOut(auth)}>
@@ -286,7 +275,7 @@ export default function AdminDashboard() {
               <p className="kicker">Organiser console</p>
               <h1 className="admin-title">Registration Control</h1>
               <p className="admin-sub">
-                Signed in as {user?.email} ·{" "}
+                Signed in as {user?.email} Â·{" "}
                 <button type="button" className="link-btn" onClick={() => signOut(auth)}>
                   sign out
                 </button>
@@ -343,7 +332,6 @@ export default function AdminDashboard() {
             <span className="tile-value">
               {
                 PROBLEMS.filter((problem) => {
-                  const slot = slots[problem.id];
                   return (slot?.count ?? 0) >= (slot?.capacity ?? problem.capacity);
                 }).length
               }
@@ -354,31 +342,19 @@ export default function AdminDashboard() {
 
         {/* ---------------- capacity ---------------- */}
         <section className="admin-panel card bracket">
-          <h2 className="admin-panel-title">Track capacity</h2>
-          <ul className="capacity-list">
             {PROBLEMS.map((problem) => {
-              const slot = slots[problem.id];
-              const count = slot?.count ?? 0;
-              const capacity = slot?.capacity ?? problem.capacity;
-              const pct = capacity ? Math.min(100, Math.round((count / capacity) * 100)) : 0;
 
               return (
                 <li
-                  className="capacity-row"
                   key={problem.id}
                   style={{ "--hue": problem.hue } as React.CSSProperties}
                 >
-                  <span className="capacity-name">
                     <b style={{ color: problem.hue }}>{problem.alien}</b>
                     <em>{problem.id}</em>
                   </span>
-                  <span className="capacity-bar" aria-hidden="true">
-                    <span className="capacity-fill" style={{ width: `${pct}%` }} />
                   </span>
-                  <span className="capacity-count">
                     {count} / {capacity}
                   </span>
-                  <label className="capacity-input">
                     <span className="sr-only">Capacity for {problem.alien}</span>
                     <input
                       type="number"
@@ -387,7 +363,6 @@ export default function AdminDashboard() {
                       defaultValue={capacity}
                       onBlur={(event) => {
                         const next = Number(event.target.value);
-                        if (next !== capacity) updateTrackCapacity(problem.id, next).then(refresh);
                       }}
                     />
                   </label>
@@ -405,7 +380,7 @@ export default function AdminDashboard() {
             <input
               type="search"
               value={search}
-              placeholder="Search team, college, email, member…"
+              placeholder="Search team, college, email, memberâ€¦"
               onChange={(event) => setSearch(event.target.value)}
             />
           </label>
@@ -421,7 +396,7 @@ export default function AdminDashboard() {
 
           <select className="input admin-select" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
             <option value="newest">Newest first</option>
-            <option value="team">Team A–Z</option>
+            <option value="team">Team Aâ€“Z</option>
             <option value="track">Track</option>
           </select>
         </div>
@@ -431,7 +406,7 @@ export default function AdminDashboard() {
         {/* ---------------- table ---------------- */}
         {loading && !records.length ? (
           <p className="page-loading">
-            <LoaderCircle size={16} className="spin" /> Loading registrations…
+            <LoaderCircle size={16} className="spin" /> Loading registrationsâ€¦
           </p>
         ) : !filtered.length ? (
           <p className="admin-empty">
@@ -461,7 +436,7 @@ export default function AdminDashboard() {
                         <span className="admin-date">
                           {record.createdAt?.seconds
                             ? new Date(record.createdAt.seconds * 1000).toLocaleDateString("en-IN")
-                            : "—"}
+                            : "â€”"}
                         </span>
                       </td>
                       <td>
@@ -480,7 +455,7 @@ export default function AdminDashboard() {
                             <li key={`${member.name}-${index}`}>
                               {member.name}
                               <em>
-                                {member.course} · Y{String(member.year).replace(/^0/, "")} ·{" "}
+                                {member.course} Â· Y{String(member.year).replace(/^0/, "")} Â·{" "}
                                 {member.phone}
                               </em>
                             </li>
@@ -511,8 +486,7 @@ export default function AdminDashboard() {
                                     ...current,
                                     records: current.records.map((row) =>
                                       row.id === record.id ? { ...row, status: next } : row,
-                                    ),
-                                  }
+                                    )
                                 : current,
                             );
                             updateRegistrationStatus(record.id, next).catch(() => refresh());
@@ -553,3 +527,5 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+
