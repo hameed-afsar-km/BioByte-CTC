@@ -33,11 +33,3 @@ yarn-error.log*
 # firebase emulator / local debug noise
 firestore-debug.log
 *-debug.log
-
-# Unused media carried over from the original Vite build: splash videos and
-# app-store screenshots. Kept on disk, out of the repo. Re-enable the lines
-# below if any of them get wired into the site.
-public/*.mp4
-public/*hero-bg.png
-public/BioByte *.png
-public/CTC *.png
