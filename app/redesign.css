@@ -374,7 +374,7 @@ body::before {
 }
 
 @media (max-width: 760px) {
-  .hero { min-height: 100svh; padding-top: 7rem; }
+  .hero { min-height: 100svh; padding-top: 7rem; padding-bottom: 5rem; }
   .countdown { gap: 0.5rem !important; }
   .countdown-unit { min-width: 39px !important; }
   .countdown-num { font-size: 2.2rem !important; }
@@ -384,6 +384,8 @@ body::before {
   .timeline-node { gap: 0.8rem !important; }
   .timeline-node > div:last-child { display: none; }
   .timeline-content { padding: 1rem !important; }
+  .section-sub { padding: 0 1rem; }
+  .problems-section .section-head { padding: 0 1rem; }
 }
 
 /* =======================================

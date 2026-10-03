@@ -22,7 +22,6 @@ export default function Footer() {
          </nav>
          <div className="footer-credits">
            © {EVENT.year} {EVENT.name} — {EVENT.presenter}. Event day {EVENT.time}.
-           <Link href="/admin" className="footer-admin-link">Organiser Dashboard</Link>
          </div>
       </div>
     </footer>

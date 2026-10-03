@@ -853,7 +853,7 @@ export default function Registration() {
                     <Clock size={13} aria-hidden="true" /> Event day {EVENT.time}
                   </span>
                   <span>
-                    <IndianRupee size={13} aria-hidden="true" /> Round 1 free · ₹50 only if
+                    <IndianRupee size={13} aria-hidden="true" /> Round 1 free · ₹50 per head if
                     shortlisted
                   </span>
                 </div>

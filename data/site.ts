@@ -6,7 +6,7 @@
  */
 
 /* ---- Splash timing — must be at least as long as the video. ---- */
-export const SPLASH_MS = 5000;
+export const SPLASH_MS = 3000;
 export const SPLASH_EXIT_MS = 700;
 
 /* ---- Event identity ---- */
@@ -18,7 +18,8 @@ export const EVENT = {
   presenter: "Crescent Technocrats Club",
   blurb:
     "A multi-disciplinary project expo. Teams pick an alien track, build working tools for real problems, then demo them the same day.",
-  time: "9:00 AM – 4:10 PM",
+  time: "09/10/26 Friday",
+  teamSize: "2 to 4 members",
   /**
    * Event day. `null` = not announced yet; the countdown falls back to a
    * "to be announced" state instead of inventing a deadline.
