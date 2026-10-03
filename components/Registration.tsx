@@ -35,7 +35,8 @@ import { auth, isFirebaseReady, missingFirebaseKeys } from "@/lib/firebase";
 import { isAllowedEmail } from "@/lib/access";
 import {
   RegistrationError,
-  fetchSlots,
+  fetchRegistrations,
+  registrationIdFor,
   submitRegistration,
 } from "@/lib/registrations";
 import {
@@ -112,7 +113,6 @@ export default function Registration() {
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
-  const [slots, setSlots] = useState<SlotSummary>({});
 
   /* Track picked in the dropdown but not yet confirmed. The select stays on
      the old value until the confirmation modal is accepted. */
@@ -121,14 +121,6 @@ export default function Registration() {
   const pollRef = useRef<number | null>(null);
 
   const email = user?.email ?? "";
-
-  /* ---- Live capacity, so a full track shows as full before you try ---- */
-  useEffect(() => {
-    if (!isFirebaseReady) return;
-    fetchSlots()
-      .then(setSlots)
-      .catch(() => setSlots({}));
-  }, [submitting]);
 
   /* ---- Restore an existing verified session without prompting ---- */
   useEffect(() => {
@@ -363,20 +355,10 @@ export default function Registration() {
     }
   };
 
-  /* ---- Track options reflect live capacity ---- */
-  const trackOptions = useMemo(
-    () =>
-      PROBLEMS.map((problem) => {
-        const slot = slots[problem.id];
-        const capacity = slot?.capacity ?? problem.capacity;
-        const taken = slot?.count ?? 0;
-        return { problem, remaining: Math.max(0, capacity - taken), full: taken >= capacity };
-      }),
-    [slots],
-  );
+  /* ---- Every published track is open to any number of teams ---- */
+  const trackOptions = useMemo(() => PROBLEMS, []);
 
   const selectedTrack = PROBLEMS.find((problem) => problem.id === form.problemId) ?? null;
-  const selectedRemaining = trackOptions.find((row) => row.problem.id === form.problemId)?.remaining;
 
   /* ---- Awaiting confirmation for a track chosen in the dropdown ---- */
   const pendingTrack = PROBLEMS.find((problem) => problem.id === pendingTrackId) ?? null;
@@ -541,9 +523,6 @@ export default function Registration() {
                   </span>
                   <span>
                     <b>{selectedTrack.alien}</b> — {selectedTrack.title}
-                  </span>
-                  <span className="track-banner-slots">
-                    {selectedRemaining} slot{selectedRemaining === 1 ? "" : "s"} left
                   </span>
                 </div>
               ) : null}
@@ -785,17 +764,18 @@ export default function Registration() {
                     }}
                   >
                     <option value="">Select a mission file</option>
-                    {trackOptions.map(({ problem, remaining, full }) => (
-                      <option key={problem.id} value={problem.id} disabled={full}>
+                    {trackOptions.map((problem) => (
+                      <option key={problem.id} value={problem.id}>
                         {problem.id} — {problem.alien} · {problem.title}
-                        {full ? " (FULL)" : ` (${remaining} left)`}
                       </option>
                     ))}
                   </select>
                   {fieldErrors.problemId ? (
                     <p className="field-error">{fieldErrors.problemId}</p>
                   ) : (
-                    <p className="field-hint">Each alien track has a limited number of slots.</p>
+                    <p className="field-hint">
+                      Pick a track to review its mission file before you confirm it.
+                    </p>
                   )}
                 </div>
 

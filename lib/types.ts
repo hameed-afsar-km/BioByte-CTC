@@ -51,15 +51,4 @@ export type RegistrationRecord = {
   createdAt: { seconds: number } | null;
 };
 
-/** Slot counter stored at `trackSlots/{trackId}`. */
-export type TrackSlot = {
-  trackId: string;
-  alien: string;
-  count: number;
-  capacity: number;
-  updatedAt: unknown;
-};
-
-export type SlotSummary = Record<string, { count: number; capacity: number }>;
-
 export type AlienPower = StatKey;

@@ -88,7 +88,6 @@ export type Problem = {
   hueDeep: string;
   powers: string[];
   stats: Record<StatKey, number>;
-  capacity: number;
   brief: string;
   tags: string[];
   tech: string[];
@@ -108,7 +107,6 @@ export const PROBLEMS: Problem[] = [
     hueDeep: "#180602",
     powers: ["Pyrokinesis", "Heat generation", "Cold resistance"],
     stats: { strength: 75, speed: 65, intelligence: 55, durability: 55 },
-    capacity: 12,
     brief: "Know the moment a vaccine is spoiled — and who needs to hear about it first.",
     tags: ["Cold Chain", "IoT", "Predictive Analytics"],
     tech: ["BLE / LoRa / GSM tracking", "Temperature and humidity sensing", "Time-series forecasting", "Alerting dashboards"],
@@ -131,7 +129,6 @@ export const PROBLEMS: Problem[] = [
     hueDeep: "#050A03",
     powers: ["Size shifting", "Technological adaptation", "Molecular upgrade"],
     stats: { strength: 70, speed: 45, intelligence: 95, durability: 60 },
-    capacity: 12,
     brief: "Put a working bioreactor on a teaching-lab bench, not a factory budget.",
     tags: ["Process Control", "Sensors", "Automation"],
     tech: ["Closed-loop PID control", "pH / DO / temperature probes", "ESP32 or STM32", "Growth modelling"],
@@ -154,7 +151,6 @@ export const PROBLEMS: Problem[] = [
     hueDeep: "#101614",
     powers: ["Super-intelligence", "Elastic brain", "Aquatic adaptation"],
     stats: { strength: 20, speed: 55, intelligence: 100, durability: 25 },
-    capacity: 12,
     brief: "Give a rural lab a microscope and an analyst for the price of a phone.",
     tags: ["Imaging", "Cell Counting", "Low Cost"],
     tech: ["Optical design and lens arrays", "Smartphone imaging", "Computer vision", "On-device ML"],
@@ -177,7 +173,6 @@ export const PROBLEMS: Problem[] = [
     hueDeep: "#02171B",
     powers: ["Body hardening", "Diamond exoskeleton", "Durability"],
     stats: { strength: 90, speed: 35, intelligence: 45, durability: 100 },
-    capacity: 12,
     brief: "Prove the waste was actually made safe, instead of assuming it was.",
     tags: ["Waste Management", "Sterilisation", "Safety"],
     tech: ["Image classification", "Colour and spectroscopy sensing", "Microbial load assays", "Compliance logging"],
@@ -200,7 +195,6 @@ export const PROBLEMS: Problem[] = [
     hueDeep: "#02101C",
     powers: ["Super-speed", "Flight", "Wheelbarrow manoeuvre"],
     stats: { strength: 35, speed: 100, intelligence: 60, durability: 30 },
-    capacity: 12,
     brief: "See the disease in the field while there is still time to treat it.",
     tags: ["AgriTech", "Imaging", "Remote Sensing"],
     tech: ["UAV or rover platforms", "Multispectral imaging", "Edge ML inference", "Advisory dashboards"],
@@ -311,7 +305,7 @@ export const FAQS = [
   },
   {
     q: "How do I pick my alien track?",
-    a: "Open each mission file, read the brief and choose the one your team can actually build in a day. Your registration is locked to that track, and each alien has a limited number of slots.",
+    a: "Open each mission file, read the brief and choose the one your team can actually build in a day. Your registration is locked to that track once you confirm it, and every track is open to as many teams as want to attempt it.",
   },
   {
     q: "What happens in Round 2?",

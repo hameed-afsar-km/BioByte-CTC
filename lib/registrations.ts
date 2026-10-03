@@ -18,12 +18,9 @@ import type {
   Member,
   RegistrationDraft,
   RegistrationRecord,
-  SlotSummary,
-  TrackSlot,
 } from "./types";
 
 export const REGISTRATIONS_COLLECTION = "registrations";
-export const TRACK_SLOTS_COLLECTION = "trackSlots";
 
 export class RegistrationError extends Error {
   code: string;
@@ -65,10 +62,11 @@ export function generatePassId(): string {
 /**
  * Writes one registration.
  *
- * The slot counter and the registration document are written in a single
- * transaction, so two teams can never claim the last seat on the same track.
- * The PPT upload happens first because Storage cannot join a Firestore
- * transaction; if the transaction rejects, the upload is rolled back.
+ * Tracks have no seat limit, so the only thing the transaction protects is the
+ * "one registration per email address" rule — it reads first to return a
+ * friendly error instead of a raw permission failure. The PPT upload happens
+ * before the write because Storage cannot join a Firestore transaction; if the
+ * transaction rejects, the upload is rolled back.
  */
 export async function submitRegistration(input: {
   draft: RegistrationDraft;
@@ -109,29 +107,13 @@ export async function submitRegistration(input: {
   try {
     await runTransaction(db, async (transaction) => {
       const registrationRef = doc(db, REGISTRATIONS_COLLECTION, id);
-      const slotRef = doc(db, TRACK_SLOTS_COLLECTION, track.id);
 
-      /* Every read must happen before any write inside a transaction. */
-      const [existing, slotSnapshot] = await Promise.all([
-        transaction.get(registrationRef),
-        transaction.get(slotRef),
-      ]);
+      const existing = await transaction.get(registrationRef);
 
       if (existing.exists()) {
         throw new RegistrationError(
           "ALREADY_REGISTERED",
           "This email address is already registered. Only one team per address.",
-        );
-      }
-
-      const slot = slotSnapshot.data() as TrackSlot | undefined;
-      const capacity = slot?.capacity ?? track.capacity;
-      const count = slot?.count ?? 0;
-
-      if (count >= capacity) {
-        throw new RegistrationError(
-          "TRACK_FULL",
-          `All ${capacity} slots on the ${track.alien} track are taken. Pick another mission file.`,
         );
       }
 
@@ -158,18 +140,6 @@ export async function submitRegistration(input: {
         status: "registered",
         createdAt: serverTimestamp(),
       });
-
-      transaction.set(
-        slotRef,
-        {
-          trackId: track.id,
-          alien: track.alien,
-          count: count + 1,
-          capacity,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
     });
   } catch (error) {
     if (pptPath) {
@@ -179,19 +149,6 @@ export async function submitRegistration(input: {
   }
 
   return { id, passId };
-}
-
-/** Reads the live slot counters for every track. */
-export async function fetchSlots(): Promise<SlotSummary> {
-  const snapshot = await getDocs(collection(db, TRACK_SLOTS_COLLECTION));
-  const slots: SlotSummary = {};
-
-  snapshot.forEach((entry) => {
-    const data = entry.data() as TrackSlot;
-    slots[entry.id] = { count: data.count ?? 0, capacity: data.capacity ?? 0 };
-  });
-
-  return slots;
 }
 
 /** Reads every registration, newest first. */
@@ -206,18 +163,6 @@ export async function fetchRegistrations(): Promise<RegistrationRecord[]> {
   });
 }
 
-/** Organiser-only: changes how many teams a track can take. */
-export async function updateTrackCapacity(trackId: string, capacity: number) {
-  const track = PROBLEMS.find((problem) => problem.id === trackId);
-  if (!track) throw new Error("Unknown track.");
-
-  await setDoc(
-    doc(db, TRACK_SLOTS_COLLECTION, trackId),
-    { trackId, alien: track.alien, capacity: Math.max(0, Math.round(capacity)) },
-    { merge: true },
-  );
-}
-
 /** Organiser-only: moves a team between shortlist states. */
 export async function updateRegistrationStatus(
   id: string,
@@ -229,10 +174,9 @@ export async function updateRegistrationStatus(
 /**
  * Organiser-only: removes a registration entirely.
  *
- * The seat is handed back in the same transaction, otherwise a deleted row
- * would keep occupying a slot forever and the track would slowly fill up with
- * phantom teams. The counter document itself is never deleted - the rules
- * reject that - so the ledger of every seat ever claimed stays auditable.
+ * With no seat limit there is no counter to hand back, so this is a plain
+ * read-then-delete. The transaction is kept only so the row cannot change
+ * between the read that finds the PPT path and the delete that drops the row.
  */
 export async function deleteRegistration(id: string) {
   const pptPath = await runTransaction(db, async (transaction) => {
@@ -242,26 +186,14 @@ export async function deleteRegistration(id: string) {
     if (!snapshot.exists()) return null;
 
     const record = snapshot.data() as RegistrationRecord;
-    const slotRef = doc(db, TRACK_SLOTS_COLLECTION, record.problemId);
-    const slotSnapshot = await transaction.get(slotRef);
-    const count = (slotSnapshot.data() as TrackSlot | undefined)?.count ?? 0;
 
     transaction.delete(registrationRef);
-
-    if (slotSnapshot.exists() && count > 0) {
-      transaction.set(
-        slotRef,
-        { count: count - 1, updatedAt: serverTimestamp() },
-        { merge: true },
-      );
-    }
 
     return record.pptPath ?? null;
   });
 
   /* Storage is not part of the transaction - Firestore would have to hold a
-     write lock open across a file upload. A leftover PPT is harmless; a lost
-     seat is not, so the transaction goes first. */
+     write lock open across a file upload. A leftover PPT is harmless. */
   if (pptPath) {
     await deleteObject(storageRef(storage, pptPath)).catch(() => undefined);
   }
