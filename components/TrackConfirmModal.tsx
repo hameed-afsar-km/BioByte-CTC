@@ -2,37 +2,44 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Zap } from "lucide-react";
+import { Check, X } from "lucide-react";
 import type { Problem } from "@/data/site";
-import { selectTrack } from "@/lib/registerGate";
-import OmnitrixMark from "./OmnitrixMark";
 
 /**
- * Secure mission-file panel. Opens one statement at a time, closes on
- * Escape or backdrop click, and hands focus back to the trigger on close.
+ * Confirmation shown when the registration form's track picker changes.
+ *
+ * Switching tracks after you have started filling the form is easy to do by
+ * accident, and the choice is locked in once you submit. So the picker never
+ * commits directly: it asks first, shows the problem statement you are about
+ * to switch to, and only applies the change on confirm.
  */
-export default function MissionModal({
+export default function TrackConfirmModal({
   problem,
-  onClose,
+  switching,
+  onConfirm,
+  onCancel,
 }: {
   problem: Problem | null;
-  onClose: () => void;
+  /** True when a different track is already chosen, i.e. this is a switch. */
+  switching: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCancel();
         return;
       }
 
       if (event.key !== "Tab") return;
 
-      /* Keep Tab inside the panel while it is open */
+      /* Keep Tab inside the dialog while it is open */
       const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1")]',
       );
       if (!focusable || !focusable.length) return;
 
@@ -47,7 +54,7 @@ export default function MissionModal({
         first.focus();
       }
     },
-    [onClose],
+    [onCancel],
   );
 
   useEffect(() => {
@@ -58,7 +65,7 @@ export default function MissionModal({
 
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", handleKeyDown);
-    closeRef.current?.focus();
+    confirmRef.current?.focus();
 
     return () => {
       document.body.style.overflow = overflow;
@@ -69,57 +76,55 @@ export default function MissionModal({
 
   if (!problem) return null;
 
-  const handleSelect = () => {
-    selectTrack(problem.id);
-    onClose();
-    document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   return createPortal(
     <div
       className="modal-overlay"
       role="presentation"
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) onCancel();
       }}
     >
       <div
         ref={panelRef}
-        className="mission-file"
+        className="mission-file track-confirm"
         role="dialog"
         aria-modal="true"
-        aria-labelledby={`mission-title-${problem.id}`}
+        aria-labelledby={`track-confirm-title-${problem.id}`}
         style={{ "--hue": problem.hue, "--hue-deep": problem.hueDeep } as React.CSSProperties}
       >
         <span className="mission-scan" aria-hidden="true" />
 
         <header className="file-head">
           <div>
-            <p className="file-eyebrow">Mission file opened</p>
+            <p className="file-eyebrow">Confirm mission file</p>
             <p className="file-code">
               [{problem.id}] <span style={{ color: problem.hue }}>{problem.alien}</span>
             </p>
-            <h2 className="file-title" id={`mission-title-${problem.id}`}>
+            <h2 className="file-title" id={`track-confirm-title-${problem.id}`}>
               {problem.title}
             </h2>
             <p className="file-domain">{problem.domain}</p>
           </div>
 
           <div className="file-head-side">
-            <OmnitrixMark className="file-ring" hue={problem.hue} />
             <button
-              ref={closeRef}
               type="button"
               className="file-close"
-              onClick={onClose}
-              aria-label="Close mission file"
+              onClick={onCancel}
+              aria-label="Cancel track change"
             >
-              ✕
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         </header>
 
         <div className="file-body">
+          <p className="track-confirm-lead">
+            {switching
+              ? "You are about to switch your mission file. Your registration stays locked to whichever track you confirm here."
+              : "Read this through before locking it in — you cannot change track after you submit."}
+          </p>
+
           <h3 className="file-subhead">Mission</h3>
           <p className="file-summary">{problem.summary}</p>
 
@@ -135,12 +140,17 @@ export default function MissionModal({
         </div>
 
         <footer className="file-foot">
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-            Close file
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
+            Cancel
           </button>
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleSelect}>
-            <Zap size={14} aria-hidden="true" />
-            Select this track
+          <button
+            ref={confirmRef}
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={onConfirm}
+          >
+            <Check size={14} aria-hidden="true" />
+            {switching ? "Switch to this track" : "Confirm this track"}
           </button>
         </footer>
       </div>

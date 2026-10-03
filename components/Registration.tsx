@@ -50,6 +50,7 @@ import { consumePendingTrack, SELECT_TRACK_EVENT } from "@/lib/registerGate";
 import type { FieldErrors, Member, SlotSummary } from "@/lib/types";
 import Reveal from "./Reveal";
 import SectionHead from "./SectionHead";
+import TrackConfirmModal from "./TrackConfirmModal";
 
 const STAGE = {
   AUTH: "auth",
@@ -57,7 +58,17 @@ const STAGE = {
   FORM: "form",
 } as const;
 
-const emptyMember = (): Member => ({ name: "", phone: "", department: "", year: "" });
+const emptyMember = (): Member => ({
+  name: "",
+  registrationNo: "",
+  year: "",
+  semester: "",
+  course: "",
+  email: "",
+  phone: "",
+  address: "",
+  dob: "",
+});
 
 const emptyForm = () => ({
   teamName: "",
@@ -103,6 +114,10 @@ export default function Registration() {
   const [submitting, setSubmitting] = useState(false);
   const [slots, setSlots] = useState<SlotSummary>({});
 
+  /* Track picked in the dropdown but not yet confirmed. The select stays on
+     the old value until the confirmation modal is accepted. */
+  const [pendingTrackId, setPendingTrackId] = useState<string | null>(null);
+
   const pollRef = useRef<number | null>(null);
 
   const email = user?.email ?? "";
@@ -127,27 +142,33 @@ export default function Registration() {
     });
   }, []);
 
+  /* ---- Committing a track, shared by the gallery shortcut and the
+         confirmation modal in the form ---- */
+  const applyTrack = useCallback((problemId: string) => {
+    const track = PROBLEMS.find((problem) => problem.id === problemId);
+    if (!track) return;
+
+    setError(null);
+    setNotice(`${track.alien} track selected — finish the form below to lock it in.`);
+    setForm((current) => ({ ...current, problemId }));
+    setFieldErrors((current) => ({ ...current, problemId: undefined }));
+  }, []);
+
   /* ---- Honour a track picked in the aliens gallery ---- */
   useEffect(() => {
-    const apply = (problemId: string) => {
-      const track = PROBLEMS.find((problem) => problem.id === problemId);
-      if (!track) return;
-
-      setError(null);
-      setNotice(`${track.alien} track selected — finish the form below to lock it in.`);
-      setForm((current) => ({ ...current, problemId }));
-      setFieldErrors((current) => ({ ...current, problemId: undefined }));
-    };
-
-    const onSelect = (event: Event) => apply((event as CustomEvent<string>).detail);
-
-    /* A click may have landed before this chunk mounted. */
-    const pending = consumePendingTrack();
-    if (pending) apply(pending);
+    const onSelect = (event: Event) => applyTrack((event as CustomEvent<string>).detail);
 
     window.addEventListener(SELECT_TRACK_EVENT, onSelect);
+
+    /* A click may have landed before this chunk mounted. Replaying it through
+       the listener keeps applyTrack on a single call site. */
+    const pending = consumePendingTrack();
+    if (pending) {
+      window.dispatchEvent(new CustomEvent(SELECT_TRACK_EVENT, { detail: pending }));
+    }
+
     return () => window.removeEventListener(SELECT_TRACK_EVENT, onSelect);
-  }, []);
+  }, [applyTrack]);
 
   /* ---- Poll for email confirmation while the verify stage is open ---- */
   const stopPolling = useCallback(() => {
@@ -197,7 +218,7 @@ export default function Registration() {
         /* Stop immediately: this address cannot register for OMNICON. */
         await signOut(auth);
         setError(
-          "Verification required. OMNICON registration is limited to approved college email addresses.",
+          "Access restricted. BioByte registration is limited to @crescent.education college email addresses only. Please sign in with your Crescent college Google account.",
         );
         return;
       }
@@ -357,6 +378,14 @@ export default function Registration() {
   const selectedTrack = PROBLEMS.find((problem) => problem.id === form.problemId) ?? null;
   const selectedRemaining = trackOptions.find((row) => row.problem.id === form.problemId)?.remaining;
 
+  /* ---- Awaiting confirmation for a track chosen in the dropdown ---- */
+  const pendingTrack = PROBLEMS.find((problem) => problem.id === pendingTrackId) ?? null;
+
+  const confirmTrack = useCallback(() => {
+    if (pendingTrackId) applyTrack(pendingTrackId);
+    setPendingTrackId(null);
+  }, [applyTrack, pendingTrackId]);
+
   /* ============================================================
      RENDER
      ============================================================ */
@@ -369,17 +398,12 @@ export default function Registration() {
         sub="Registration is limited to approved college email addresses. Teams of 2 to 4 register for one alien track and submit a Round 1 PPT."
       />
 
-      <Reveal className="hud-panel">
-        <div className="hud-bar">
-          <span className="hud-dots" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="hud-title">OMNITRIX_REGISTRATION</span>
-          <span className="hud-status">
-            <span className="status-dot" aria-hidden="true" />
-            {stage === STAGE.FORM ? "IDENTITY LOCKED" : "ENCRYPTED"}
+      <Reveal className="hud-panel professional-panel">
+        <div className="professional-header">
+          <h2 className="professional-title">Team Registration</h2>
+          <span className="professional-status">
+            <Lock size={14} className="status-icon" />
+            {stage === STAGE.FORM ? "Verified Session" : "Secure Form"}
           </span>
         </div>
 
@@ -578,10 +602,10 @@ export default function Registration() {
                 </div>
 
                 {form.members.map((member, index) => (
-                  <fieldset className="member-block" key={index}>
-                    <legend className="member-legend">
-                      {index === 0 ? "Team Head · Operative 01" : `Operative 0${index + 1}`}
-                    </legend>
+                  <details className="member-block" key={index} open={index < 2}>
+                    <summary className="member-legend">
+                      {index === 0 ? "Team Head · Operative 01 (Required)" : `Operative 0${index + 1} ${index < 2 ? "(Required)" : "(Optional, but fields required if filled)"}`}
+                    </summary>
                     <div className="member-grid">
                       <div className={`field ${fieldErrors[`member_${index}_name`] ? "has-error" : ""}`}>
                         <label className="field-label" htmlFor={`m-${index}-name`}>
@@ -599,39 +623,19 @@ export default function Registration() {
                         ) : null}
                       </div>
 
-                      <div className={`field ${fieldErrors[`member_${index}_phone`] ? "has-error" : ""}`}>
-                        <label className="field-label" htmlFor={`m-${index}-phone`}>
-                          Contact
+                      <div className={`field ${fieldErrors[`member_${index}_registrationNo`] ? "has-error" : ""}`}>
+                        <label className="field-label" htmlFor={`m-${index}-reg`}>
+                          Registration No
                         </label>
                         <input
-                          id={`m-${index}-phone`}
+                          id={`m-${index}-reg`}
                           className="input"
-                          type="tel"
-                          inputMode="tel"
-                          placeholder="10-digit number"
-                          value={member.phone}
-                          onChange={updateMember(index, "phone")}
+                          placeholder="e.g. 2311001"
+                          value={member.registrationNo}
+                          onChange={updateMember(index, "registrationNo")}
                         />
-                        {fieldErrors[`member_${index}_phone`] ? (
-                          <p className="field-error">{fieldErrors[`member_${index}_phone`]}</p>
-                        ) : null}
-                      </div>
-
-                      <div
-                        className={`field ${fieldErrors[`member_${index}_department`] ? "has-error" : ""}`}
-                      >
-                        <label className="field-label" htmlFor={`m-${index}-dept`}>
-                          Department
-                        </label>
-                        <input
-                          id={`m-${index}-dept`}
-                          className="input"
-                          placeholder="Department"
-                          value={member.department}
-                          onChange={updateMember(index, "department")}
-                        />
-                        {fieldErrors[`member_${index}_department`] ? (
-                          <p className="field-error">{fieldErrors[`member_${index}_department`]}</p>
+                        {fieldErrors[`member_${index}_registrationNo`] ? (
+                          <p className="field-error">{fieldErrors[`member_${index}_registrationNo`]}</p>
                         ) : null}
                       </div>
 
@@ -655,8 +659,111 @@ export default function Registration() {
                           <p className="field-error">{fieldErrors[`member_${index}_year`]}</p>
                         ) : null}
                       </div>
+
+                      <div className={`field ${fieldErrors[`member_${index}_semester`] ? "has-error" : ""}`}>
+                        <label className="field-label" htmlFor={`m-${index}-sem`}>
+                          Semester
+                        </label>
+                        <select
+                          id={`m-${index}-sem`}
+                          className="input"
+                          value={member.semester}
+                          onChange={updateMember(index, "semester")}
+                        >
+                          <option value="">Select semester</option>
+                          {Array.from({ length: 8 }, (_, i) => (
+                            <option key={i + 1} value={String(i + 1)}>Semester {i + 1}</option>
+                          ))}
+                        </select>
+                        {fieldErrors[`member_${index}_semester`] ? (
+                          <p className="field-error">{fieldErrors[`member_${index}_semester`]}</p>
+                        ) : null}
+                      </div>
+
+                      <div className={`field ${fieldErrors[`member_${index}_course`] ? "has-error" : ""}`}>
+                        <label className="field-label" htmlFor={`m-${index}-course`}>
+                          Course
+                        </label>
+                        <input
+                          id={`m-${index}-course`}
+                          className="input"
+                          placeholder="e.g. B.Tech Biotech"
+                          value={member.course}
+                          onChange={updateMember(index, "course")}
+                        />
+                        {fieldErrors[`member_${index}_course`] ? (
+                          <p className="field-error">{fieldErrors[`member_${index}_course`]}</p>
+                        ) : null}
+                      </div>
+
+                      <div className={`field ${fieldErrors[`member_${index}_email`] ? "has-error" : ""}`}>
+                        <label className="field-label" htmlFor={`m-${index}-email`}>
+                          College Email
+                        </label>
+                        <input
+                          id={`m-${index}-email`}
+                          className="input"
+                          type="email"
+                          placeholder="name@crescent.education"
+                          value={member.email}
+                          onChange={updateMember(index, "email")}
+                        />
+                        {fieldErrors[`member_${index}_email`] ? (
+                          <p className="field-error">{fieldErrors[`member_${index}_email`]}</p>
+                        ) : null}
+                      </div>
+
+                      <div className={`field ${fieldErrors[`member_${index}_phone`] ? "has-error" : ""}`}>
+                        <label className="field-label" htmlFor={`m-${index}-phone`}>
+                          Mobile Number
+                        </label>
+                        <input
+                          id={`m-${index}-phone`}
+                          className="input"
+                          type="tel"
+                          inputMode="tel"
+                          placeholder="10-digit number"
+                          value={member.phone}
+                          onChange={updateMember(index, "phone")}
+                        />
+                        {fieldErrors[`member_${index}_phone`] ? (
+                          <p className="field-error">{fieldErrors[`member_${index}_phone`]}</p>
+                        ) : null}
+                      </div>
+
+                      <div className={`field ${fieldErrors[`member_${index}_dob`] ? "has-error" : ""}`}>
+                        <label className="field-label" htmlFor={`m-${index}-dob`}>
+                          Date of Birth
+                        </label>
+                        <input
+                          id={`m-${index}-dob`}
+                          className="input"
+                          type="date"
+                          value={member.dob}
+                          onChange={updateMember(index, "dob")}
+                        />
+                        {fieldErrors[`member_${index}_dob`] ? (
+                          <p className="field-error">{fieldErrors[`member_${index}_dob`]}</p>
+                        ) : null}
+                      </div>
+
+                      <div className={`field field-wide ${fieldErrors[`member_${index}_address`] ? "has-error" : ""}`}>
+                        <label className="field-label" htmlFor={`m-${index}-address`}>
+                          Residential Address
+                        </label>
+                        <input
+                          id={`m-${index}-address`}
+                          className="input"
+                          placeholder="Full residential address"
+                          value={member.address}
+                          onChange={updateMember(index, "address")}
+                        />
+                        {fieldErrors[`member_${index}_address`] ? (
+                          <p className="field-error">{fieldErrors[`member_${index}_address`]}</p>
+                        ) : null}
+                      </div>
                     </div>
-                  </fieldset>
+                  </details>
                 ))}
 
                 <div className={`field field-wide ${fieldErrors.problemId ? "has-error" : ""}`}>
@@ -669,8 +776,12 @@ export default function Registration() {
                     className="input"
                     value={form.problemId}
                     onChange={(event) => {
-                      setForm((current) => ({ ...current, problemId: event.target.value }));
-                      setFieldErrors((current) => ({ ...current, problemId: undefined }));
+                      /* Never commit straight from the dropdown — hold the
+                         choice and let the confirmation modal apply it. The
+                         select is bound to form.problemId, so it visibly
+                         snaps back until the change is confirmed. */
+                      const next = event.target.value;
+                      if (next) setPendingTrackId(next);
                     }}
                   >
                     <option value="">Select a mission file</option>
@@ -772,6 +883,13 @@ export default function Registration() {
           )}
         </div>
       </Reveal>
+
+      <TrackConfirmModal
+        problem={pendingTrack}
+        switching={Boolean(form.problemId) && pendingTrackId !== form.problemId}
+        onConfirm={confirmTrack}
+        onCancel={() => setPendingTrackId(null)}
+      />
     </section>
   );
 }

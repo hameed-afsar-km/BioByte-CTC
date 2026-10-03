@@ -50,10 +50,10 @@ export default function Countdown({ target }: { target: string | null }) {
   const remaining = split(end - now);
 
   return (
-    <div className="countdown" aria-live="off">
+    <div className="countdown" aria-live="off" suppressHydrationWarning>
       {UNITS.map((unit) => (
-        <div className="countdown-unit" key={unit.key}>
-          <span className="countdown-num">{pad(remaining[unit.key as keyof typeof remaining])}</span>
+        <div className="countdown-unit" key={unit.key} suppressHydrationWarning>
+          <span className="countdown-num" suppressHydrationWarning>{pad(remaining[unit.key as keyof typeof remaining])}</span>
           <span className="countdown-label">{unit.label}</span>
         </div>
       ))}

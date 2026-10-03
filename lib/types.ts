@@ -4,9 +4,14 @@ export type Year = "1" | "2" | "3" | "4";
 
 export type Member = {
   name: string;
-  phone: string;
-  department: string;
+  registrationNo: string;
   year: Year | "";
+  semester: string;
+  course: string;
+  email: string;
+  phone: string;
+  address: string;
+  dob: string;
 };
 
 export type FieldErrors = Record<string, string | undefined>;

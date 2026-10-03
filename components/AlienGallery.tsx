@@ -1,7 +1,7 @@
 "use client";
 
-import { Lock, Zap } from "lucide-react";
-import { CLASSIFIED, PROBLEMS, STAT_KEYS } from "@/data/site";
+import { Zap } from "lucide-react";
+import { PROBLEMS, STAT_KEYS } from "@/data/site";
 import { selectTrack } from "@/lib/registerGate";
 import OmnitrixMark from "./OmnitrixMark";
 import Reveal from "./Reveal";
@@ -101,26 +101,6 @@ export default function AlienGallery() {
         ))}
       </div>
 
-      {/* ---- classified, for flavour only ---- */}
-      <Reveal className="classified-wrap" delay={120}>
-        <p className="classified-label">
-          <Lock size={13} aria-hidden="true" />
-          Classified — no mission file released
-        </p>
-        <ul className="classified-row">
-          {CLASSIFIED.map((alien) => (
-            <li key={alien.name} className="classified-chip" style={{ "--hue": alien.hue } as React.CSSProperties}>
-              <span className="classified-glyph" aria-hidden="true">
-                {alien.glyph}
-              </span>
-              <span>
-                <b>{alien.name}</b>
-                <em>{alien.quote}</em>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Reveal>
     </section>
   );
 }

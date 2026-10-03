@@ -26,7 +26,7 @@ const RULE_ICONS = {
 };
 
 export default function RulesTimeline() {
-  const listRef = useRef<HTMLOListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   /* Lights each step as it passes through the middle of the viewport. */
   useEffect(() => {
@@ -52,33 +52,27 @@ export default function RulesTimeline() {
   }, []);
 
   return (
-    <section id="timeline" className="section protocol-section">
+    <>
+    <section id="rules" className="section protocol-section">
       <SectionHead
-        kicker="Rules & Timeline"
-        title="How It Works"
-        sub="Seven standing orders, then five stages from registration to the final demo. Follow the sequence and you stay eligible all the way through."
+        kicker="Guidelines"
+        title="The Rules"
+        sub="Seven standing orders to keep the expo fair and competitive."
+        centered
       />
 
-      <div className="protocol-grid">
-        {/* ---------------- rules of engagement ---------------- */}
+      <div className="container" style={{ maxWidth: '800px', margin: '0 auto' }}>
         <Reveal className="rules-panel card bracket">
-          <div className="rules-head">
-            <span className="rules-icon" aria-hidden="true">
-              <ShieldCheck size={20} />
-            </span>
-            <h3 className="rules-title">The Rules</h3>
-          </div>
-
-          <ul className="rules-list">
+          <ul className="rules-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {RULES.map((rule, index) => {
               const Icon = RULE_ICONS[rule.icon as keyof typeof RULE_ICONS];
               return (
-                <li className="rule-item" key={rule.text}>
-                  <span className="rule-mark" aria-hidden="true">
-                    <Icon size={15} />
+                <li className="rule-item" key={rule.text} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.4)', borderRadius: '8px' }}>
+                  <span className="rule-mark" aria-hidden="true" style={{ color: 'var(--color-omni)' }}>
+                    <Icon size={24} />
                   </span>
-                  <span className="rule-text">{rule.text}</span>
-                  <span className="rule-index" aria-hidden="true">
+                  <span className="rule-text" style={{ flex: 1, fontSize: '1rem', color: '#fff' }}>{rule.text}</span>
+                  <span className="rule-index" aria-hidden="true" style={{ opacity: 0.2, fontWeight: 'bold' }}>
                     {String(index + 1).padStart(2, "0")}
                   </span>
                 </li>
@@ -86,31 +80,37 @@ export default function RulesTimeline() {
             })}
           </ul>
         </Reveal>
+      </div>
+    </section>
 
-        {/* ---------------- protocol flow ---------------- */}
-        <div className="flow">
-          <h3 className="flow-title">Round by Round</h3>
+    <section id="timeline" className="section timeline-section">
+      <SectionHead
+        kicker="Schedule"
+        title="Event Timeline"
+        sub="Follow the sequence from registration to the final demo."
+        centered
+      />
 
-          <ol className="flow-list" ref={listRef}>
-            {PROTOCOL.map((step) => (
-              <li className="flow-step" key={step.step}>
-                <span className="flow-rail" aria-hidden="true">
-                  <span className="flow-rail-fill" />
-                </span>
-
-                <span className="flow-node" aria-hidden="true">
-                  {step.step}
-                </span>
-
-                <div className="flow-body card">
-                  <h4 className="flow-step-title">{step.title}</h4>
-                  <p className="flow-text">{step.text}</p>
+      <div className="container" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div className="new-timeline" ref={listRef}>
+          {PROTOCOL.map((step, index) => (
+            <div className="new-timeline-node flow-step" key={step.step}>
+              <div className="new-timeline-marker">
+                <div className="new-timeline-dot">
+                   <ShieldCheck size={18} />
                 </div>
-              </li>
-            ))}
-          </ol>
+                {index !== PROTOCOL.length - 1 && <div className="new-timeline-line"></div>}
+              </div>
+              <div className="new-timeline-content card">
+                <span className="new-timeline-step-id">{step.step}</span>
+                <h4 className="new-timeline-title">{step.title}</h4>
+                <p className="new-timeline-text">{step.text}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
+    </>
   );
 }

@@ -14,12 +14,12 @@
  * comes up on its own the moment real env vars are present.
  */
 export const FIREBASE_PUBLIC_CONFIG = {
-  apiKey: "AIzaSyC9pOTkqZFPXSwHWOa0YlXoNGrTE8Amq8k",
-  authDomain: "biobyte-1e69c.firebaseapp.com",
-  projectId: "biobyte-1e69c",
-  storageBucket: "biobyte-1e69c.firebasestorage.app",
-  messagingSenderId: "552797929312",
-  appId: "1:552797929312:web:6ec9e900c93c30c07be805",
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
   measurementId: "",
 };
 

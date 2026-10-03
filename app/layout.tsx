@@ -3,6 +3,7 @@ import { Bangers, Chakra_Petch } from "next/font/google";
 import "./globals.css";
 /* Section layouts load after the design system so they win specificity ties. */
 import "./sections.css";
+import "./redesign.css";
 
 const bangers = Bangers({
   subsets: ["latin"],

@@ -480,7 +480,7 @@ export default function AdminDashboard() {
                             <li key={`${member.name}-${index}`}>
                               {member.name}
                               <em>
-                                {member.department} · Y{String(member.year).replace(/^0/, "")} ·{" "}
+                                {member.course} · Y{String(member.year).replace(/^0/, "")} ·{" "}
                                 {member.phone}
                               </em>
                             </li>

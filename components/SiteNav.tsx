@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Zap } from "lucide-react";
 import { EVENT, NAV_ITEMS } from "@/data/site";
-import OmnitrixMark from "./OmnitrixMark";
 
 export default function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
@@ -66,7 +65,7 @@ export default function SiteNav() {
               goTo("top");
             }}
           >
-            <OmnitrixMark className="brand-mark" />
+            <img src="/CTC.png" className="brand-mark" alt="CTC Logo" />
             <span className="brand-text">
               <span className="brand-name">{EVENT.name}</span>
               <span className="brand-sub">{EVENT.presenter}</span>
@@ -91,7 +90,7 @@ export default function SiteNav() {
           </div>
 
           <div className="navbar-actions">
-            <a className="btn btn-primary btn-sm" href="#register" onClick={() => goTo("register")}>
+            <a className="btn btn-primary btn-sm" href="/register">
               <Zap size={15} aria-hidden="true" />
               Register Now
             </a>
@@ -125,7 +124,7 @@ export default function SiteNav() {
               {item.label}
             </button>
           ))}
-          <a className="btn btn-primary btn-block" href="#register" onClick={() => goTo("register")}>
+          <a className="btn btn-primary btn-block" href="/register">
             <Zap size={15} aria-hidden="true" />
             Register Now
           </a>

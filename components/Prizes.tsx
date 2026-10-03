@@ -9,46 +9,54 @@ export default function Prizes() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <section id="prizes" className="section section--tight prizes-section">
+    <section id="prizes" className="section prizes-section">
       <SectionHead
         kicker="Mission Rewards"
         title="Prize Vault"
-        sub="Three reward pods are sealed for Round 2. Open a pod to see what your track is competing for."
+        sub="Unlock the ultimate rewards. Complete your mission to secure these prizes."
         centered
       />
 
-      <div className="pod-grid">
-        {PRIZES.map((prize, index) => {
-          const open = openId === prize.id;
-          return (
+      <div className="prize-podium-container">
+        <div className="prize-podium">
+          {[PRIZES[1], PRIZES[0], PRIZES[2]].map((prize, index) => (
             <Reveal
               as="article"
               key={prize.id}
-              className="pod card bracket"
+              className={`podium-card ${prize.id === 'p1' ? 'podium-first' : ''}`}
               delay={index * 120}
+              style={{ "--hue": prize.hue } as React.CSSProperties}
             >
-              <button
-                type="button"
-                className="pod-trigger"
-                aria-expanded={open}
-                onClick={() => setOpenId(open ? null : prize.id)}
-                style={{ "--hue": prize.hue } as React.CSSProperties}
-              >
-                <span className="pod-lid" aria-hidden="true" />
-                <span className="pod-place">{prize.place}</span>
-                <span className="pod-alien">{prize.alien}</span>
-                <span className="pod-state">{open ? "Pod open" : "Tap to open"}</span>
-              </button>
-
-              <div className="pod-panel" hidden={!open}>
-                <p className="pod-amount">{prize.amount}</p>
-                <h3 className="pod-title">{prize.title}</h3>
-                <p className="pod-text">{prize.text}</p>
-                <p className="pod-podname">Reward pod — {prize.podName}</p>
+              <div className="prize-glow" />
+              <div className="podium-content">
+                <span className="prize-place">{prize.place}</span>
+                <h3 className="prize-amount">{prize.amount}</h3>
+                <div className="prize-divider" />
+                <h4 className="prize-alien">{prize.alien}</h4>
+                <p className="prize-text">{prize.text}</p>
               </div>
             </Reveal>
-          );
-        })}
+          ))}
+        </div>
+
+        {/* 4th Prize: Best Innovation */}
+        {PRIZES[3] && (
+          <Reveal as="div" delay={400} className="prize-special-wrapper">
+            <article className="podium-card prize-special-card" style={{ "--hue": PRIZES[3].hue } as React.CSSProperties}>
+              <div className="prize-glow" />
+              <div className="podium-content special-content">
+                <div className="special-left">
+                  <span className="prize-place">{PRIZES[3].place}</span>
+                  <h3 className="prize-amount">{PRIZES[3].amount}</h3>
+                </div>
+                <div className="special-right">
+                  <h4 className="prize-alien">{PRIZES[3].alien}</h4>
+                  <p className="prize-text">{PRIZES[3].text}</p>
+                </div>
+              </div>
+            </article>
+          </Reveal>
+        )}
       </div>
     </section>
   );

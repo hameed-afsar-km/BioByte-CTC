@@ -1,15 +1,17 @@
-import { TICKER_SLOGAN, TICKER_WORDS } from "@/data/site";
+import { TICKER_WORDS } from "@/data/site";
 
-function strip(className: string, items: string[], label: string) {
+function strip(className: string, items: string[]) {
+  // Multiply items so a single run is wide enough to overflow ultra-wide screens
+  const multipliedItems = [...items, ...items, ...items, ...items, ...items, ...items];
+  
   return (
     <div className={`marquee ${className}`.trim()}>
-      <span className="marquee-label">{label}</span>
-      <div className="marquee-viewport">
+      <div className="marquee-viewport marquee-viewport--centered">
         {/* The run is duplicated so the loop has no visible seam. The
             duplicate is hidden from assistive tech. */}
         {[0, 1].map((copy) => (
           <ul className="marquee-run" key={copy} aria-hidden={copy === 1}>
-            {items.map((word, i) => (
+            {multipliedItems.map((word, i) => (
               <li className="marquee-word" key={`${copy}-${word}-${i}`}>
                 {word}
               </li>
@@ -22,14 +24,12 @@ function strip(className: string, items: string[], label: string) {
 }
 
 /**
- * Two counter-scrolling strips. This is the rhythm that makes the club
- * site feel alive rather than like a static poster.
+ * Single scrolling strip. Center focused and faded at the edges.
  */
 export default function Ticker() {
   return (
-    <section aria-label="Club activity">
-      {strip("", TICKER_WORDS, "What we run")}
-      {strip("marquee--reverse", TICKER_SLOGAN, "Slogan")}
+    <section aria-label="Project Expo Focus" className="ticker-section">
+      {strip("", TICKER_WORDS)}
     </section>
   );
 }

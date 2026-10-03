@@ -6,8 +6,10 @@ export const LIMITS = {
   teamName: 60,
   collegeName: 120,
   memberName: 80,
+  registrationNo: 50,
+  course: 100,
   phone: 20,
-  department: 80,
+  address: 500,
   abstract: 1200,
 } as const;
 
@@ -82,12 +84,34 @@ export function validateDraft(draft: RegistrationDraft): FieldErrors {
       phones.add(digits);
     }
 
-    if (member.department.trim().length < 2) {
-      errors[`member_${index}_department`] = "Required";
+    if (member.registrationNo.trim().length < 2) {
+      errors[`member_${index}_registrationNo`] = "Required";
     }
 
     if (!member.year) {
       errors[`member_${index}_year`] = "Required";
+    }
+
+    if (member.semester.trim().length < 1) {
+      errors[`member_${index}_semester`] = "Required";
+    }
+
+    if (member.course.trim().length < 2) {
+      errors[`member_${index}_course`] = "Required";
+    }
+
+    if (!isValidEmail(member.email)) {
+      errors[`member_${index}_email`] = "Invalid email";
+    } else if (!member.email.trim().toLowerCase().endsWith("@crescent.education")) {
+      errors[`member_${index}_email`] = "Must be a crescent.education email";
+    }
+
+    if (member.address.trim().length < 5) {
+      errors[`member_${index}_address`] = "Required";
+    }
+
+    if (member.dob.trim().length < 2) {
+      errors[`member_${index}_dob`] = "Required";
     }
   });
 
@@ -113,8 +137,13 @@ export function cleanMembers(members: Member[]): Member[] {
     .filter((member) => member.name.trim().length > 0)
     .map((member) => ({
       name: member.name.trim(),
-      phone: member.phone.trim(),
-      department: member.department.trim(),
+      registrationNo: member.registrationNo.trim(),
       year: member.year,
+      semester: member.semester.trim(),
+      course: member.course.trim(),
+      email: member.email.trim(),
+      phone: member.phone.trim(),
+      address: member.address.trim(),
+      dob: member.dob.trim(),
     }));
 }

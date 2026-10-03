@@ -5,13 +5,13 @@
  * site lives in this file. Components stay presentational.
  */
 
-/* ---- Splash timing (shared by the JS timer and the CSS animation) ---- */
-export const SPLASH_MS = 2800;
-export const SPLASH_EXIT_MS = 600;
+/* ---- Splash timing — must be at least as long as the video. ---- */
+export const SPLASH_MS = 5000;
+export const SPLASH_EXIT_MS = 700;
 
 /* ---- Event identity ---- */
 export const EVENT = {
-  name: "OMNICON",
+  name: "BIOBYTE",
   franchise: "BEN 10",
   year: new Date().getFullYear(),
   tagline: "It's time to transform.",
@@ -22,9 +22,11 @@ export const EVENT = {
   /**
    * Event day. `null` = not announced yet; the countdown falls back to a
    * "to be announced" state instead of inventing a deadline.
-   * Set e.g. "2026-11-14T09:00:00+05:30" and the countdown goes live.
+   * Friday 9 October 2026, 9:00 AM IST. The offset matters — without it the
+   * countdown would resolve 9am in the viewer's own timezone.
    */
-  date: null as string | null,
+  date: "2026-10-09T09:00:00+05:30" as string | null,
+  deadline: "2026-10-06T23:59:00+05:30",
   venue: "To be announced",
   teamSize: "2 to 4 members",
   roundOne: "Free registration + PPT submission",
@@ -99,6 +101,29 @@ export type Problem = {
 export const PROBLEMS: Problem[] = [
   {
     id: "OM-01",
+    alien: "Heatblast",
+    species: "Tetrax DNA",
+    glyph: "✦",
+    hue: "#FF7A00",
+    hueDeep: "#180602",
+    powers: ["Pyrokinesis", "Heat generation", "Cold resistance"],
+    stats: { strength: 75, speed: 65, intelligence: 55, durability: 55 },
+    capacity: 12,
+    brief: "Know the moment a vaccine is spoiled — and who needs to hear about it first.",
+    tags: ["Cold Chain", "IoT", "Predictive Analytics"],
+    tech: ["BLE / LoRa / GSM tracking", "Temperature and humidity sensing", "Time-series forecasting", "Alerting dashboards"],
+    domain: "Pharma Logistics · IoT",
+    title: "Cold Chain Guardian",
+    summary:
+      "Build a smart package for temperature-sensitive biologics that logs excursions, predicts whether the drug is still usable, and alerts the right person.",
+    points: [
+      "Continuously log temperature across the whole shipping journey",
+      "Predict remaining viability from cumulative thermal exposure",
+      "Alert the right person the moment an excursion crosses the limit",
+    ],
+  },
+  {
+    id: "OM-02",
     alien: "Upgrade",
     species: "Tetrax DNA",
     glyph: "◆",
@@ -107,21 +132,21 @@ export const PROBLEMS: Problem[] = [
     powers: ["Size shifting", "Technological adaptation", "Molecular upgrade"],
     stats: { strength: 70, speed: 45, intelligence: 95, durability: 60 },
     capacity: 12,
-    brief: "Twin the bioreactor and catch a failing batch before it costs you the run.",
-    tags: ["Simulation", "Real-time Data", "Optimisation"],
-    tech: ["Python", "Simulation models", "IoT / sensor data", "Dashboards"],
-    domain: "Bioprocess Engineering",
-    title: "Digital Twin for Industrial Bioreactors",
+    brief: "Put a working bioreactor on a teaching-lab bench, not a factory budget.",
+    tags: ["Process Control", "Sensors", "Automation"],
+    tech: ["Closed-loop PID control", "pH / DO / temperature probes", "ESP32 or STM32", "Growth modelling"],
+    domain: "Bioprocess · Control Systems",
+    title: "Bench-Top Smart Bioreactor",
     summary:
-      "Build a digital twin that fuses first-principles models, microbial kinetics, live sensor feeds and historical fermentation data to continuously predict biomass growth, substrate use and product formation — then run what-if simulations to cut batch failures.",
+      "Make a low-cost lab bioreactor that automatically controls temperature, pH, dissolved oxygen and agitation, with a model that predicts growth and flags deviations early.",
     points: [
-      "Continuous prediction of growth, oxygen uptake and metabolite output",
-      "Early detection of process deviations",
-      "What-if simulation for feeding, aeration, agitation and temperature",
+      "Closed-loop control of temperature, pH, dissolved oxygen and agitation",
+      "A model that predicts growth and flags deviation early",
+      "A bill of materials a teaching lab can actually afford",
     ],
   },
   {
-    id: "OM-02",
+    id: "OM-03",
     alien: "Grey Matter",
     species: "Tetrax DNA",
     glyph: "◈",
@@ -130,40 +155,17 @@ export const PROBLEMS: Problem[] = [
     powers: ["Super-intelligence", "Elastic brain", "Aquatic adaptation"],
     stats: { strength: 20, speed: 55, intelligence: 100, durability: 25 },
     capacity: 12,
-    brief: "Teach a model to spot what a slide under a microscope was missing.",
-    tags: ["Image AI", "Cell Counting", "Detection"],
-    tech: ["Computer vision", "CNNs", "OpenCV", "PyTorch / TensorFlow"],
-    domain: "Computer Vision · Bio-imaging",
-    title: "AI-Based Microscopy Analysis",
+    brief: "Give a rural lab a microscope and an analyst for the price of a phone.",
+    tags: ["Imaging", "Cell Counting", "Low Cost"],
+    tech: ["Optical design and lens arrays", "Smartphone imaging", "Computer vision", "On-device ML"],
+    domain: "Bio-imaging · Public Health",
+    title: "Pocket Microscope for Rural Labs",
     summary:
-      "Create an AI image-analysis system that automatically detects, counts, classifies and flags abnormal cells from microscopy images, surfacing results through annotated images, graphs or a live dashboard.",
+      "Design an affordable smartphone-based microscope setup with AI that counts and classifies cells and flags abnormalities.",
     points: [
-      "Detect, count, classify and identify cell abnormalities",
-      "Analyse size, shape, morphology and distribution features",
-      "Report through annotated output or a dashboard",
-    ],
-  },
-  {
-    id: "OM-03",
-    alien: "Heatblast",
-    species: "Tetrax DNA",
-    glyph: "✦",
-    hue: "#FF7A00",
-    hueDeep: "#180602",
-    powers: ["Pyrokinesis", "Heat generation", "Magma resistance"],
-    stats: { strength: 75, speed: 65, intelligence: 55, durability: 55 },
-    capacity: 12,
-    brief: "Watch the fermenter live and act before the culture drifts out of spec.",
-    tags: ["Sensors", "Monitoring", "Control"],
-    tech: ["IoT / Arduino", "Data analytics", "Web or mobile app", "ML (optional)"],
-    domain: "IoT · Process Control",
-    title: "Smart Fermentation Monitoring System",
-    summary:
-      "Replace periodic manual checks with real-time intelligence. Analyse temperature, pH, dissolved oxygen, agitation, CO₂, optical density and nutrient levels to predict growth and recommend process adjustments.",
-    points: [
-      "Real-time multi-parameter sensing and fusion",
-      "Predict microbial growth and estimate product formation",
-      "Recommend adjustments to reduce operator intervention",
+      "An affordable optical and mechanical setup that works with a phone",
+      "Counting and classifying cells straight from the captured field",
+      "Flagging abnormalities for a technician with no lab nearby",
     ],
   },
   {
@@ -176,86 +178,45 @@ export const PROBLEMS: Problem[] = [
     powers: ["Body hardening", "Diamond exoskeleton", "Durability"],
     stats: { strength: 90, speed: 35, intelligence: 45, durability: 100 },
     capacity: 12,
-    brief: "Map exactly where heavy metals will settle next, and how sure you are.",
-    tags: ["Prediction", "Environment", "Modelling"],
-    tech: ["Python / R", "Regression and ML", "GIS / maps", "Data visualisation"],
-    domain: "Environmental Science · ML",
-    title: "Heavy Metals Sedimentation Predictor",
+    brief: "Prove the waste was actually made safe, instead of assuming it was.",
+    tags: ["Waste Management", "Sterilisation", "Safety"],
+    tech: ["Image classification", "Colour and spectroscopy sensing", "Microbial load assays", "Compliance logging"],
+    domain: "Environmental Health · Automation",
+    title: "Biomedical Waste Sorter",
     summary:
-      "Deliver an integrated prediction system that combines grain size and mineral composition, pH, redox potential, dissolved oxygen, organic matter, and human and biological activity to flag areas most susceptible to heavy-metal sedimentation.",
+      "Build a system that identifies and segregates hospital waste and verifies safe sterilisation or disposal.",
     points: [
-      "Fuse soil, chemical and biological signals into one model",
-      "Detect high-risk zones from previously collected data",
-      "Remain efficient, data-consistent and fully integrated",
+      "Identifying and segregating waste at the point of collection",
+      "Verifying sterilisation actually happened, not just that it was logged",
+      "An auditable chain from bin to final disposal",
     ],
   },
   {
     id: "OM-05",
-    alien: "Ghostfreak",
+    alien: "XLR8",
     species: "Tetrax DNA",
     glyph: "◐",
-    hue: "#7B3FD4",
-    hueDeep: "#0B0418",
-    powers: ["Phase intangibility", "Possession", "Precognition"],
-    stats: { strength: 40, speed: 85, intelligence: 80, durability: 15 },
+    hue: "#35A7FF",
+    hueDeep: "#02101C",
+    powers: ["Super-speed", "Flight", "Wheelbarrow manoeuvre"],
+    stats: { strength: 35, speed: 100, intelligence: 60, durability: 30 },
     capacity: 12,
-    brief: "Rank old drugs for new diseases, and show your reasoning for every pick.",
-    tags: ["Drug Discovery", "AI Ranking", "Bioinformatics"],
-    tech: ["Machine learning", "Graph analysis", "Bioinformatics databases", "Python"],
-    domain: "Computational Biology · AI/ML",
-    title: "AI-Assisted Drug Repurposing Candidates",
+    brief: "See the disease in the field while there is still time to treat it.",
+    tags: ["AgriTech", "Imaging", "Remote Sensing"],
+    tech: ["UAV or rover platforms", "Multispectral imaging", "Edge ML inference", "Advisory dashboards"],
+    domain: "AgriTech · Remote Sensing",
+    title: "Crop Health Scout",
     summary:
-      "Build a computational platform that re-analyses existing drugs for new indications using drug–target interactions, molecular properties and public biological data, producing a ranked shortlist ready for further investigation.",
+      "Develop a drone or rover that scans fields for early plant disease and soil stress, and recommends action to farmers.",
     points: [
-      "Analyse drug–target interactions and molecular properties",
-      "Use bioinformatics, docking, network analysis or AI/ML",
-      "Output a ranked, prioritised shortlist of candidates",
+      "A drone or rover that covers ground faster than a person can walk",
+      "Early detection of plant disease and soil stress",
+      "Recommendations the farmer can act on the same day",
     ],
   },
 ];
 
-/**
- * Classified aliens — gallery flavour only, no mission file and no sign-up.
- * Kept separate from PROBLEMS so the form can never offer a dead track.
- */
-export type ClassifiedAlien = {
-  name: string;
-  species: string;
-  glyph: string;
-  hue: string;
-  quote: string;
-};
-
-export const CLASSIFIED: ClassifiedAlien[] = [
-  {
-    name: "XLR8",
-    species: "Kryptonian DNA",
-    glyph: "➤",
-    hue: "#FF3B30",
-    quote: "Velocity beyond machine limits.",
-  },
-  {
-    name: "Ripjaws",
-    species: "Selivan DNA",
-    glyph: "◤",
-    hue: "#3D9BFF",
-    quote: "Built for the pressure of the deep.",
-  },
-  {
-    name: "Wildfire",
-    species: "Petrosapien DNA",
-    glyph: "✸",
-    hue: "#FFB300",
-    quote: "Combustion at cellular temperature.",
-  },
-  {
-    name: "Stinkworst",
-    species: "Garbalon DNA",
-    glyph: "✹",
-    hue: "#B6FF5C",
-    quote: "Aromatic payload. Deploy at your own risk.",
-  },
-];
+// CLASSIFIED aliens removed as per request.
 
 /* ---- Prize vault ---- */
 export type Prize = {
@@ -300,26 +261,34 @@ export const PRIZES: Prize[] = [
     alien: "Heatblast",
     hue: "#FF7A00",
   },
+  {
+    id: "p4",
+    place: "Best Innovation",
+    amount: "₹500",
+    title: "Creative Spark",
+    text: "Most out-of-the-box and unique approach to a problem.",
+    podName: "Galvanic Core",
+    alien: "Grey Matter",
+    hue: "#9AA8A0",
+  },
 ];
 
 /* ---- Rules of engagement ---- */
 export const RULES = [
-  { icon: "globe", text: "Open to all students across departments and institutions." },
-  { icon: "users", text: "Team size must be between 2 and 4 members." },
-  { icon: "gift", text: "Round 1 registration is completely free." },
-  { icon: "fileText", text: "Round 1 requires a PPT submission from every team." },
-  { icon: "advance", text: "Selected teams advance to Round 2." },
-  { icon: "wallet", text: "Round 2 fee is ₹50 per head." },
-  { icon: "clock", text: "Event runs from 9:00 AM to 4:10 PM." },
+  { icon: "globe", text: "Open to all students with no department or year restriction." },
+  { icon: "users", text: "Each team must have 2–4 members and work on one problem statement only." },
+  { icon: "advance", text: "AI tools and hardware projects are allowed. Bring your own hardware." },
+  { icon: "wallet", text: "Existing solutions can be inspiration, but direct copying is prohibited." },
+  { icon: "clock", text: "CTC provides guidance and support, but does not build projects for you." },
 ];
 
-/* ---- Transformation protocol ---- */
+/* ---- Transformation protocol (Timeline) ---- */
 export const PROTOCOL = [
-  { step: "01", title: "Register", text: "Verify your Crescent email and register your team." },
-  { step: "02", title: "Submit PPT", text: "Present your approach through a Round 1 deck." },
-  { step: "03", title: "Shortlisting", text: "Judges select the teams advancing to Round 2." },
-  { step: "04", title: "Round 2 Build", text: "Build a working prototype on your alien track." },
-  { step: "05", title: "Final Demo", text: "Demo your solution to the panel and the floor." },
+  { step: "Mon, 5 Oct", title: "Registration Opens", text: "Problem statements are revealed and website registration begins." },
+  { step: "Tue, 6 Oct", title: "Preparation", text: "Teams prepare their Round 1 PPTs using the CTC mock template." },
+  { step: "Wed, 7 Oct", title: "PPT Deadline", text: "PPT submission closes strictly at 11:59 PM." },
+  { step: "Thu, 8 Oct", title: "Shortlisting", text: "Shortlisted teams announced, payment collected, and prototype prep begins." },
+  { step: "Fri, 9 Oct", title: "Final Demo", text: "Final judging, prototype demonstrations, and afternoon awards ceremony." },
 ];
 
 /* ---- Frequently asked questions ---- */
@@ -405,25 +374,18 @@ export const FOOTER_LINKS = [
 export const NAV_ITEMS = [
   { id: "aliens", label: "Aliens" },
   { id: "about", label: "About" },
-  { id: "problems", label: "Challenges" },
   { id: "timeline", label: "How it works" },
   { id: "prizes", label: "Prizes" },
-  { id: "faq", label: "FAQs" },
-  { id: "core-team", label: "Core Team" },
-  { id: "contact", label: "Contact" },
 ];
 
 /* ---- Marquee copy ---- */
 export const TICKER_WORDS = [
-  "Aliens",
-  "Hackathons",
-  "Workshops",
-  "Seminars",
-  "Tech Talks",
-  "Biolabs",
-  "Ideathons",
+  "Project Expo",
+  "Biotechnology",
+  "Computer Science",
+  "Prototypes",
+  "Innovation",
+  "Hardware",
+  "Software",
   "Demos",
-  "Mentoring",
 ];
-
-export const TICKER_SLOGAN = ["It's time to transform.", "Pick your alien."];

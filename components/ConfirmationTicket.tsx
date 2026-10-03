@@ -183,7 +183,7 @@ export default function ConfirmationTicket() {
                       <li key={`${member.name}-${index}`}>
                         <b>{member.name}</b>
                         <span>
-                          {member.department} · Year {member.year} · {member.phone}
+                          {member.course} · Year {member.year} · {member.phone}
                         </span>
                       </li>
                     ))}

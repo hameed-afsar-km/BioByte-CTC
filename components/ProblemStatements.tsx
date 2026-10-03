@@ -19,9 +19,11 @@ export default function ProblemStatements() {
         sub="Five official problem statements. Open one mission file at a time — your registration stays locked to the track you pick, and every alien has a limited number of slots."
       />
 
-      <div className="mission-grid">
+      <div className="new-mission-grid">
         {PROBLEMS.map((item, index) => (
-          <MissionCard key={item.id} problem={item} index={index} onOpen={setActive} />
+          <div key={item.id} className={`mission-grid-item mission-item-${index + 1}`}>
+            <MissionCard problem={item} index={index} onOpen={setActive} />
+          </div>
         ))}
       </div>
 

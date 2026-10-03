@@ -5,57 +5,33 @@ import OmnitrixMark from "./OmnitrixMark";
 
 export default function Footer() {
   return (
-    <footer className="footer">
-      <div className="footer-glow" aria-hidden="true" />
-
-      <div className="container footer-inner">
-        <div className="footer-brand">
-          <OmnitrixMark className="footer-mark" />
-          <p className="footer-slogan">
-            {EVENT.name}
-            <span className="footer-slogan-accent"> — {EVENT.tagline}</span>
-          </p>
-          <p className="footer-mini">
-            A futuristic biotech hackathon by {EVENT.presenter}.
-          </p>
-        </div>
-
-        <nav className="footer-links" aria-label="Footer">
-          <h3 className="footer-heading">Quick Links</h3>
-          <ul>
-            {FOOTER_LINKS.map((link) => (
-              <li key={link.id}>
-                <a className="footer-link" href={`#${link.id}`}>
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <div className="footer-cta">
-          <h3 className="footer-heading">Bring a team</h3>
-          <p className="footer-mini">
-            Round 1 is free for Crescent email holders. Teams of {EVENT.teamSize}.
-          </p>
-          <a className="btn btn-primary btn-block" href="#register">
-            <Zap size={16} aria-hidden="true" />
-            Register Now
-          </a>
-          <Link className="footer-admin-link" href="/admin">
-            <LayoutDashboard size={14} aria-hidden="true" />
-            Organiser dashboard
-          </Link>
-        </div>
+    <footer className="new-footer-100vh">
+      <div className="footer-background-glow"></div>
+      
+      <div className="footer-main-content">
+         <div className="footer-logo-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+           <img src="/ctc.png" alt="CTC Logo" style={{ width: '140px', filter: 'drop-shadow(0 0 20px rgba(124, 252, 0, 0.4))' }} />
+           <img src="/biobyte.png" alt="BioByte Logo" style={{ width: '300px', filter: 'drop-shadow(0 0 20px rgba(124, 252, 0, 0.4))' }} />
+         </div>
+         
+         <div className="footer-big-cta" style={{ marginTop: '2rem' }}>
+           <Link className="btn btn-primary btn-massive" href="/register">
+             <Zap size={24} />
+             <span>ACCESS REGISTRATION</span>
+           </Link>
+         </div>
       </div>
 
-      <div className="footer-base">
-        <div className="container footer-base-inner">
-          <span>
-            © {EVENT.year} {EVENT.name} — {EVENT.presenter}.
-          </span>
-          <span className="footer-base-tag">Event day {EVENT.time}</span>
-        </div>
+      <div className="footer-bottom-nav">
+         <nav className="footer-links-row">
+           {FOOTER_LINKS.map((link) => (
+             <a key={link.id} href={`#${link.id}`} className="footer-nav-link">{link.label}</a>
+           ))}
+         </nav>
+         <div className="footer-credits">
+           © {EVENT.year} {EVENT.name} — {EVENT.presenter}. Event day {EVENT.time}.
+           <Link href="/admin" className="footer-admin-link">Organiser Dashboard</Link>
+         </div>
       </div>
     </footer>
   );

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ElementType,
+  type ReactNode,
+} from "react";
 
 type RevealProps = {
   children: ReactNode;
@@ -10,6 +17,11 @@ type RevealProps = {
   as?: ElementType;
   /** Fires as soon as the element enters the viewport instead of waiting for scroll. */
   once?: boolean;
+  /**
+   * Inline styles for the wrapper. Merged underneath `transitionDelay`, which
+   * the reveal always owns — a caller passing `transitionDelay` is ignored.
+   */
+  style?: CSSProperties;
 };
 
 /**
@@ -25,6 +37,7 @@ export default function Reveal({
   className = "",
   as: Tag = "div",
   once = true,
+  style,
 }: RevealProps) {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
@@ -62,7 +75,7 @@ export default function Reveal({
     <Tag
       ref={ref}
       className={`reveal ${visible ? "is-in" : ""} ${className}`.trim()}
-      style={{ transitionDelay: visible ? `${delay}ms` : undefined }}
+      style={{ ...style, transitionDelay: visible ? `${delay}ms` : undefined }}
     >
       {children}
     </Tag>

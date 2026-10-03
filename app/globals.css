@@ -23,20 +23,20 @@
 
 @theme {
   /* ---- Surfaces, darkest to lightest ---- */
-  --color-void: #01050a;
-  --color-carbon: #050b11;
-  --color-panel: #0a151d;
-  --color-panel-2: #0e1e28;
-  --color-panel-3: #142a35;
+  --color-void: #010803;
+  --color-carbon: #031006;
+  --color-panel: #061a0b;
+  --color-panel-2: #092410;
+  --color-panel-3: #113619;
 
   /* ---- Lines ---- */
-  --color-line: #17323f;
-  --color-line-2: #245264;
+  --color-line: #16381e;
+  --color-line-2: #22542e;
 
   /* ---- Type ---- */
-  --color-mist: #c6dde5;
-  --color-mist-2: #8ba7b4;
-  --color-mist-3: #5d7986;
+  --color-mist: #cdeac7;
+  --color-mist-2: #9bc694;
+  --color-mist-3: #6b9564;
 
   /* The Omnitrix dial is drawn in these two: near-black rim and cross,
      white power wedges. Both are load-bearing in OmnitrixMark.tsx. */
@@ -65,7 +65,7 @@
 
 :root {
   --nav-h: 72px;
-  --gutter: clamp(1.15rem, 4vw, 2.5rem);
+  --gutter: clamp(1.5rem, 5vw, 3rem);
   --shell: 1280px;
 
   /* Default per-card accent. Any component can override with an inline
@@ -112,6 +112,22 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* ---- Scrollbar styling ---- */
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-carbon);
+  border-left: 1px solid var(--color-line);
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(124 252 0 / 0.4);
+  border: 1px solid var(--color-omni);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-omni);
 }
 
 /* ---- Layer 1: hex lattice + two slow auras ---- */
@@ -165,7 +181,7 @@ body::after {
   pointer-events: none;
   background:
     repeating-linear-gradient(180deg, rgb(255 255 255 / 0.022) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse at 50% 40%, transparent 42%, rgb(1 5 10 / 0.72) 100%);
+    radial-gradient(ellipse at 50% 40%, transparent 42%, rgb(1 10 3 / 0.72) 100%);
 }
 
 /* ==========================================================================
@@ -351,26 +367,23 @@ ol {
 
 .card {
   position: relative;
-  background:
-    linear-gradient(180deg, rgb(14 30 40 / 0.92), rgb(6 13 19 / 0.94));
-  border: 1px solid var(--color-line);
-  /* The inset line is the "top edge catching the light" of a metal plate. */
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
-    0 18px 40px -28px rgb(0 0 0 / 0.9);
-  transition:
-    border-color 0.25s ease,
-    box-shadow 0.25s ease,
-    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  background: rgba(0, 15, 5, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(124, 252, 0, 0.2);
+  border-radius: 16px;
+  box-shadow: 
+    inset 0 0 20px rgba(124, 252, 0, 0.05),
+    0 10px 30px rgba(0, 0, 0, 0.8);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Lime edge, for panels that are the focus of a section. */
 .bracket {
-  border-color: var(--edge);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 0 0 1px rgb(124 252 0 / 0.05),
-    0 24px 60px -34px rgb(0 0 0 / 0.95);
+  border: 1px solid rgba(124, 252, 0, 0.5);
+  box-shadow: 
+    inset 0 0 30px rgba(124, 252, 0, 0.1),
+    0 0 20px rgba(124, 252, 0, 0.2);
 }
 
 .card-hover:hover {
@@ -570,10 +583,18 @@ ol {
 
 .marquee {
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
-  background: rgb(6 14 20 / 0.9);
-  border-block: 1px solid var(--edge);
+  background: transparent;
+  padding-block: 0.8rem;
+}
+
+.ticker-section {
+  padding-block: 4rem;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgb(124 252 0 / 0.08), transparent);
+  border-top: 1px solid var(--edge);
+  border-bottom: 1px solid var(--edge);
 }
 
 .marquee + .marquee {
@@ -604,7 +625,12 @@ ol {
   flex: 1;
   display: flex;
   overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+}
+
+.marquee-viewport--centered {
+  justify-content: center;
 }
 
 .marquee-run {
@@ -655,12 +681,15 @@ ol {
 
 .hud-panel {
   position: relative;
-  background: linear-gradient(180deg, rgb(13 27 36 / 0.94), rgb(5 11 17 / 0.96));
-  border: 1px solid var(--edge);
+  background: rgba(0, 15, 5, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(124, 252, 0, 0.2);
+  border-radius: 16px;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 0 0 1px rgb(124 252 0 / 0.04),
-    0 30px 70px -40px #000;
+    inset 0 0 20px rgba(124, 252, 0, 0.05),
+    0 10px 30px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
 }
 
 .hud-bar {
@@ -762,8 +791,9 @@ ol {
   font-size: 1rem;
   font-weight: 500;
   color: #fff;
-  background: rgb(3 8 12 / 0.75);
-  border: 1px solid var(--color-line);
+  background: rgba(0, 15, 5, 0.4);
+  border: 1px solid rgba(124, 252, 0, 0.2);
+  border-radius: 8px;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -776,7 +806,7 @@ ol {
 
 .input:focus {
   outline: none;
-  background: rgb(4 11 16 / 0.9);
+  background: rgba(0, 15, 5, 0.8);
   border-color: var(--color-omni);
   box-shadow: 0 0 0 1px var(--color-omni), 0 0 22px -6px rgb(124 252 0 / 0.55);
 }
