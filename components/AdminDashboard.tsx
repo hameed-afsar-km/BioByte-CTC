@@ -25,9 +25,10 @@ import { isAdminEmail } from "@/lib/access";
 import {
   deleteRegistration,
   fetchRegistrations,
+  fetchAuditLogs,
   updateRegistrationStatus
 } from "@/lib/registrations";
-import type { RegistrationRecord } from "@/lib/types";
+import type { RegistrationRecord, AuditLog } from "@/lib/types";
 import OmnitrixMark from "./OmnitrixMark";
 
 type SortKey = "newest" | "team" | "track";
@@ -47,11 +48,15 @@ function csvCell(value: unknown) {
 
 /** Stable empty references, so `data?.records ?? EMPTY` keeps its identity. */
 const NO_RECORDS: RegistrationRecord[] = [];
+const NO_AUDIT_LOGS: AuditLog[] = [];
 
 /** One round trip for everything the dashboard shows. No state, no side effects. */
 async function readDashboard() {
-  const records = await fetchRegistrations();
-  return { records };
+  const [records, auditLogs] = await Promise.all([
+    fetchRegistrations(),
+    fetchAuditLogs()
+  ]);
+  return { records, auditLogs };
 }
 
 export default function AdminDashboard() {
@@ -59,7 +64,8 @@ export default function AdminDashboard() {
   const [user, setUser] = useState<{ email: string | null } | null | undefined>(undefined);
   const [data, setData] = useState<{
     records: RegistrationRecord[];
-      key: number;
+    auditLogs: AuditLog[];
+    key: number;
   } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -67,7 +73,7 @@ export default function AdminDashboard() {
   const [sort, setSort] = useState<SortKey>("newest");
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"all" | "shortlisted">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "shortlisted" | "audit">("all");
   const [selectedTeam, setSelectedTeam] = useState<RegistrationRecord | null>(null);
   /* Bumping this re-runs the load effect â€” the manual refresh button. */
   const [refreshKey, setRefreshKey] = useState(0);
@@ -80,8 +86,24 @@ export default function AdminDashboard() {
      on hand is missing or was loaded for an older request key. */
   const loading = isAdmin && (!data || data.key !== refreshKey);
   const records = data?.records ?? NO_RECORDS;
+  const auditLogs = data?.auditLogs ?? NO_AUDIT_LOGS;
 
-
+  const handleStatusChange = (record: RegistrationRecord, nextStatus: "shortlisted" | "rejected") => {
+    const reason = window.prompt(`Enter reason to ${nextStatus} ${record.teamName}:`);
+    if (reason === null) return;
+    if (reason.trim() === "") {
+      window.alert("Reason is required.");
+      return;
+    }
+    const cleanReason = reason.trim();
+    
+    setData((current) => current ? { 
+      ...current, 
+      records: current.records.map((r) => r.id === record.id ? { ...r, status: nextStatus, statusReason: cleanReason } : r) 
+    } : current);
+    
+    updateRegistrationStatus(record.id, record.teamName, user!.email!, nextStatus, cleanReason).catch(() => refresh());
+  };
   useEffect(() => {
     if (!isFirebaseReady) return undefined;
     return onAuthStateChanged(auth, (next) => {
@@ -308,6 +330,12 @@ export default function AdminDashboard() {
           >
             <BadgeCheck size={18} /> Shortlisted Teams
           </button>
+          <button 
+            onClick={() => setActiveTab("audit")}
+            className={`w-full px-4 py-3 rounded-xl flex items-center gap-3 font-medium transition-all ${activeTab === "audit" ? "bg-gray-800/40 text-green-400 border border-gray-700/50" : "text-gray-400 hover:text-white hover:bg-gray-800/20 border border-transparent"}`}
+          >
+            <ShieldAlert size={18} /> Audit Logs
+          </button>
           <div className="my-4 border-b border-gray-800/50"></div>
           <Link href="/" className="px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800/40 rounded-xl flex items-center gap-3 font-medium transition-all">
             <ArrowLeft size={18} /> Back to Site
@@ -474,8 +502,9 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Table */}
-            <div className="bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            {/* Main Table */}
+            {activeTab !== "audit" && (
+              <div className="bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
               {loading && !records.length ? (
                 <div className="py-24 flex flex-col justify-center items-center gap-4 text-gray-500">
                   <LoaderCircle size={32} className="animate-spin text-green-500" />
@@ -523,20 +552,7 @@ export default function AdminDashboard() {
                             
                             <td className="px-8 py-6 align-top">
                               <div className="font-bold text-gray-100 text-base whitespace-normal break-words max-w-[220px] leading-tight mb-1">{record.teamName}</div>
-                              <div className="text-xs font-medium text-gray-500 whitespace-normal break-words max-w-[220px] mb-4">{record.collegeName}</div>
-                              {record.status !== "shortlisted" && (
-                                <button
-                                  onClick={() => {
-                                    if (window.confirm(`Are you sure you want to shortlist ${record.teamName}?`)) {
-                                      setData((current) => current ? { ...current, records: current.records.map((r) => r.id === record.id ? { ...r, status: "shortlisted" } : r) } : current);
-                                      updateRegistrationStatus(record.id, "shortlisted").catch(() => refresh());
-                                    }
-                                  }}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
-                                >
-                                  <BadgeCheck size={14} /> Shortlist Team
-                                </button>
-                              )}
+                              <div className="text-xs font-medium text-gray-500 whitespace-normal break-words max-w-[220px]">{record.collegeName}</div>
                             </td>
                             
                             <td className="px-8 py-6 align-top">
@@ -571,35 +587,32 @@ export default function AdminDashboard() {
                             </td>
                             
                             <td className="px-8 py-6 align-top">
-                              <select
-                                className={`text-xs font-bold border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500/50 cursor-pointer transition-all appearance-none pr-8 bg-no-repeat ${
+                              <div className="flex flex-col gap-2">
+                                <span className={`inline-flex w-fit px-2.5 py-1 text-xs font-bold rounded-lg border ${
                                   record.status === 'registered' ? 'bg-[#0a0a0a] border-gray-700 text-gray-300' :
                                   record.status === 'shortlisted' ? 'bg-emerald-950 border-green-500/50 text-green-400' :
                                   'bg-red-950 border-red-500/50 text-red-400'
-                                }`}
-                                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
-                                value={record.status}
-                                onChange={(event) => {
-                                  const next = event.target.value as RegistrationRecord["status"];
-                                  setData((current) =>
-                                    current
-                                      ? {
-                                          ...current,
-                                          records: current.records.map((row) =>
-                                            row.id === record.id ? { ...row, status: next } : row,
-                                          )
-                                        }
-                                      : current,
-                                  );
-                                  updateRegistrationStatus(record.id, next).catch(() => refresh());
-                                }}
-                              >
-                                {STATUSES.map((status) => (
-                                  <option key={status} value={status}>
-                                    {STATUS_LABEL[status]}
-                                  </option>
-                                ))}
-                              </select>
+                                }`}>
+                                  {STATUS_LABEL[record.status]}
+                                </span>
+                                
+                                {record.status !== "shortlisted" && (
+                                  <button
+                                    onClick={() => handleStatusChange(record, "shortlisted")}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors w-fit"
+                                  >
+                                    <BadgeCheck size={14} /> Shortlist
+                                  </button>
+                                )}
+                                {record.status !== "rejected" && (
+                                  <button
+                                    onClick={() => handleStatusChange(record, "rejected")}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors w-fit"
+                                  >
+                                    <X size={14} /> Reject
+                                  </button>
+                                )}
+                              </div>
                             </td>
                             
                             <td className="px-8 py-6 align-top text-right">
@@ -632,7 +645,60 @@ export default function AdminDashboard() {
                   System Version 2.4.1
                 </div>
               </div>
-            </div>
+              </div>
+            )}
+
+            {/* Audit Logs Table */}
+            {activeTab === "audit" && (
+              <div className="bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[800px]">
+                    <thead>
+                      <tr className="bg-[#0a0a0a] border-b border-gray-800 text-xs font-semibold text-gray-500 uppercase tracking-widest">
+                        <th className="px-8 py-5">Time</th>
+                        <th className="px-8 py-5">Admin</th>
+                        <th className="px-8 py-5">Action</th>
+                        <th className="px-8 py-5">Team</th>
+                        <th className="px-8 py-5">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800/60">
+                      {auditLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-8 py-12 text-center text-gray-500">
+                            No audit logs available.
+                          </td>
+                        </tr>
+                      ) : auditLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-gray-800/20 transition-colors">
+                          <td className="px-8 py-4 text-sm text-gray-400">
+                            {log.timestamp?.seconds
+                              ? new Date(log.timestamp.seconds * 1000).toLocaleDateString("en-IN", {
+                                  day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })
+                              : "Unknown"}
+                          </td>
+                          <td className="px-8 py-4 text-sm font-medium text-gray-300">{log.adminEmail}</td>
+                          <td className="px-8 py-4">
+                            <span className={`inline-flex px-2 py-1 text-xs font-bold rounded border ${
+                              log.action === 'SHORTLISTED' ? 'bg-emerald-950 border-green-500/50 text-green-400' :
+                              log.action === 'REJECTED' ? 'bg-red-950 border-red-500/50 text-red-400' :
+                              'bg-gray-900 border-gray-700 text-gray-300'
+                            }`}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="px-8 py-4 text-sm font-bold text-gray-200">{log.teamName}</td>
+                          <td className="px-8 py-4 text-sm text-gray-400 max-w-[300px] break-words">{log.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+
 
             <div className="mt-12 text-center text-gray-600 text-xs tracking-widest font-bold pb-8">
               END OF RECORDS
@@ -677,6 +743,12 @@ export default function AdminDashboard() {
                     <a href={`mailto:${selectedTeam.emailId}`} className="font-bold text-blue-400 hover:underline text-lg truncate block">{selectedTeam.emailId}</a>
                   </div>
                 </div>
+                {selectedTeam.statusReason && (
+                  <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800 mt-4">
+                    <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Status Reason ({STATUS_LABEL[selectedTeam.status]})</p>
+                    <p className="font-medium text-gray-300">{selectedTeam.statusReason}</p>
+                  </div>
+                )}
               </div>
               
               <div>

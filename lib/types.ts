@@ -48,7 +48,18 @@ export type RegistrationRecord = {
   pptName: string | null;
   round: string;
   status: "registered" | "shortlisted" | "rejected";
+  statusReason?: string;
   createdAt: { seconds: number } | null;
+  updatedAt?: { seconds: number } | null;
+};
+
+export type AuditLog = {
+  id: string;
+  adminEmail: string;
+  action: string;
+  teamName: string;
+  reason: string;
+  timestamp: { seconds: number } | null;
 };
 
 export type AlienPower = StatKey;

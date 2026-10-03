@@ -18,6 +18,7 @@ import type {
   Member,
   RegistrationDraft,
   RegistrationRecord,
+  AuditLog,
 } from "./types";
 
 export const REGISTRATIONS_COLLECTION = "registrations";
@@ -163,12 +164,39 @@ export async function fetchRegistrations(): Promise<RegistrationRecord[]> {
   });
 }
 
+export async function fetchAuditLogs(): Promise<AuditLog[]> {
+  const snapshot = await getDocs(
+    query(collection(db, "audit_logs"), orderBy("timestamp", "desc")),
+  );
+
+  return snapshot.docs.map((entry) => {
+    const data = entry.data();
+    return { ...(data as AuditLog), id: entry.id };
+  });
+}
+
 /** Organiser-only: moves a team between shortlist states. */
 export async function updateRegistrationStatus(
   id: string,
+  teamName: string,
+  adminEmail: string,
   status: RegistrationRecord["status"],
+  reason: string
 ) {
-  await setDoc(doc(db, REGISTRATIONS_COLLECTION, id), { status }, { merge: true });
+  await setDoc(doc(db, REGISTRATIONS_COLLECTION, id), { 
+    status,
+    statusReason: reason,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  const logRef = doc(collection(db, "audit_logs"));
+  await setDoc(logRef, {
+    action: status === "shortlisted" ? "SHORTLISTED" : status === "rejected" ? "REJECTED" : "REGISTERED",
+    teamName,
+    reason,
+    adminEmail,
+    timestamp: serverTimestamp()
+  });
 }
 
 /**

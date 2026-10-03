@@ -29,7 +29,6 @@ export const EVENT = {
   date: "2026-10-09T09:00:00+05:30" as string | null,
   deadline: "2026-10-06T23:59:00+05:30",
   venue: "To be announced",
-  teamSize: "2 to 4 members",
   roundOne: "Free registration + PPT submission",
   roundTwo: "₹50 per head if you make Round 2",
 };
