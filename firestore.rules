@@ -144,7 +144,7 @@ service cloud.firestore {
 
     /* Everything else in this database is closed. */
     match /{document=**} {
-      allow read, write: if THIS_IS_NOT_VALID_RULES {
+      allow read, write: if false;
     }
   }
 }

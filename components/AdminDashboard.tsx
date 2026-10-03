@@ -15,7 +15,8 @@ import {
   ShieldAlert,
   Trash2,
   TriangleAlert,
-  Users
+  Users,
+  X
 } from "lucide-react";
 import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from "firebase/auth";
 import { PROBLEMS } from "@/data/site";
@@ -66,7 +67,8 @@ export default function AdminDashboard() {
   const [sort, setSort] = useState<SortKey>("newest");
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-
+  const [activeTab, setActiveTab] = useState<"all" | "shortlisted">("all");
+  const [selectedTeam, setSelectedTeam] = useState<RegistrationRecord | null>(null);
   /* Bumping this re-runs the load effect â€” the manual refresh button. */
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((key) => key + 1);
@@ -124,6 +126,7 @@ export default function AdminDashboard() {
     const needle = search.trim().toLowerCase();
 
     const rows = records.filter((record) => {
+      if (activeTab === "shortlisted" && record.status !== "shortlisted") return false;
       if (trackFilter && record.problemId !== trackFilter) return false;
       if (!needle) return true;
 
@@ -142,7 +145,7 @@ export default function AdminDashboard() {
       if (sort === "track") return a.problemId.localeCompare(b.problemId);
       return (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0);
     });
-  }, [records, search, trackFilter, sort]);
+  }, [records, search, trackFilter, sort, activeTab]);
 
   const totals = useMemo(() => {
     const capacity = PROBLEMS.length * 9999;
@@ -205,7 +208,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
         <p className="flex items-center gap-3 text-gray-400 font-medium">
-          <LoaderCircle size={20} className="animate-spin text-emerald-500" /> Linking account...
+          <LoaderCircle size={20} className="animate-spin text-green-500" /> Linking account...
         </p>
       </div>
     );
@@ -234,7 +237,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4">
         <div className="bg-[#111111] border border-gray-800 rounded-2xl p-10 max-w-md w-full text-center shadow-2xl">
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <ShieldAlert size={32} />
           </div>
           <h1 className="text-2xl font-bold text-white mb-3">Restricted Access</h1>
@@ -250,7 +253,7 @@ export default function AdminDashboard() {
             {!user ? (
               <button
                 type="button"
-                className="inline-flex w-full justify-center items-center gap-2 px-5 py-3 text-sm font-semibold bg-emerald-500 text-black rounded-xl hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                className="inline-flex w-full justify-center items-center gap-2 px-5 py-3 text-sm font-semibold bg-green-500 text-black rounded-xl hover:bg-green-400 transition-colors disabled:opacity-50"
                 onClick={handleSignIn}
                 disabled={signingIn}
               >
@@ -279,13 +282,13 @@ export default function AdminDashboard() {
   /* ---------------- dashboard ---------------- */
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-gray-200 font-sans overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="flex h-screen bg-[#0a0a0a] text-gray-200 font-sans overflow-hidden selection:bg-green-500/30 selection:text-emerald-200">
       
       {/* ---------------- Sidebar ---------------- */}
       <aside className="hidden lg:flex w-72 bg-[#111111] border-r border-gray-800 flex-col shrink-0">
         <div className="h-20 flex items-center px-8 border-b border-gray-800/50">
           <div className="font-bold text-xl text-white tracking-widest flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-black shadow-lg shadow-emerald-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-black shadow-lg shadow-green-500/20">
               <ShieldAlert size={20} className="fill-black/20" />
             </div>
             BIOBYTE
@@ -293,9 +296,19 @@ export default function AdminDashboard() {
         </div>
         
         <nav className="flex-1 p-5 space-y-2">
-          <div className="px-4 py-3 bg-gray-800/40 text-emerald-400 rounded-xl flex items-center gap-3 font-medium border border-gray-700/50">
-            <Users size={18} /> Registrations
-          </div>
+          <button 
+            onClick={() => setActiveTab("all")}
+            className={`w-full px-4 py-3 rounded-xl flex items-center gap-3 font-medium transition-all ${activeTab === "all" ? "bg-gray-800/40 text-green-400 border border-gray-700/50" : "text-gray-400 hover:text-white hover:bg-gray-800/20 border border-transparent"}`}
+          >
+            <Users size={18} /> All Registrations
+          </button>
+          <button 
+            onClick={() => setActiveTab("shortlisted")}
+            className={`w-full px-4 py-3 rounded-xl flex items-center gap-3 font-medium transition-all ${activeTab === "shortlisted" ? "bg-gray-800/40 text-green-400 border border-gray-700/50" : "text-gray-400 hover:text-white hover:bg-gray-800/20 border border-transparent"}`}
+          >
+            <BadgeCheck size={18} /> Shortlisted Teams
+          </button>
+          <div className="my-4 border-b border-gray-800/50"></div>
           <Link href="/" className="px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800/40 rounded-xl flex items-center gap-3 font-medium transition-all">
             <ArrowLeft size={18} /> Back to Site
           </Link>
@@ -332,7 +345,7 @@ export default function AdminDashboard() {
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm"
             >
-              <RefreshCw size={16} className={loading ? "animate-spin text-emerald-500" : ""} /> 
+              <RefreshCw size={16} className={loading ? "animate-spin text-green-500" : ""} /> 
               <span className="hidden sm:inline">Refresh</span>
             </button>
             <button 
@@ -346,7 +359,7 @@ export default function AdminDashboard() {
             <button 
               onClick={() => window.print()} 
               disabled={!filtered.length}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 rounded-xl text-sm font-bold text-black transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-400 rounded-xl text-sm font-bold text-black transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50"
             >
               <Printer size={16} /> 
               <span className="hidden sm:inline">Print / PDF</span>
@@ -373,14 +386,14 @@ export default function AdminDashboard() {
               </div>
 
               <div className="bg-[#111111] border border-gray-800/60 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity text-emerald-500">
+                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity text-green-500">
                   <BadgeCheck size={64} />
                 </div>
-                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Operatives</p>
-                <p className="text-5xl font-black text-emerald-400 tracking-tight">{totals.people}</p>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Total Members</p>
+                <p className="text-5xl font-black text-green-400 tracking-tight">{totals.people}</p>
                 <div className="mt-4 pt-4 border-t border-gray-800/50 flex items-center justify-between">
                   <span className="text-xs text-gray-500 font-medium">Across all tracks</span>
-                  <span className="text-xs text-emerald-400/50 font-bold bg-emerald-500/10 px-2 py-1 rounded-md">Live</span>
+                  <span className="text-xs text-green-400/50 font-bold bg-green-500/10 px-2 py-1 rounded-md">Live</span>
                 </div>
               </div>
 
@@ -396,30 +409,34 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-[#111111] border border-gray-800/60 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity text-blue-500">
+              <div className="bg-[#111111] border border-gray-800/60 rounded-2xl p-6 shadow-xl relative overflow-hidden group flex flex-col">
+                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity text-blue-500">
                   <Gauge size={64} />
                 </div>
-                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Tracks Full</p>
-                <p className="text-5xl font-black text-blue-400 tracking-tight">
-                  {PROBLEMS.filter(p => records.filter(r => r.problemId === p.id && r.status !== "rejected").length >= 9999).length}
-                </p>
-                <div className="mt-4 pt-4 border-t border-gray-800/50 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 font-medium">Of {PROBLEMS.length} total</span>
-                  <span className="text-xs text-blue-400/50 font-bold bg-blue-500/10 px-2 py-1 rounded-md">Metrics</span>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Track Wise Strength</p>
+                <div className="flex-1 flex flex-col justify-between gap-1 z-10">
+                  {PROBLEMS.map((problem) => {
+                    const count = records.filter(r => r.problemId === problem.id && r.status !== "rejected").length;
+                    return (
+                      <div key={problem.id} className="flex justify-between items-center">
+                        <span className="text-xs text-gray-400">{problem.id} {problem.alien}</span>
+                        <span className="text-sm font-bold text-gray-200">{count}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
             {/* Filter Bar */}
             <div className="bg-[#111111] border border-gray-800/80 rounded-2xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-8 shadow-lg">
-              <div className="flex-1 flex items-center gap-3 px-4 py-2 bg-[#0a0a0a] rounded-xl border border-gray-800 focus-within:border-emerald-500/50 transition-colors">
+              <div className="flex-1 flex items-center gap-3 px-4 py-2 bg-[#0a0a0a] rounded-xl border border-gray-800 focus-within:border-green-500/50 transition-colors">
                 <Search size={18} className="text-gray-500" />
                 <input
                   type="search"
                   className="w-full bg-transparent border-none outline-none text-gray-200 placeholder-gray-600 text-sm font-medium py-1"
                   value={search}
-                  placeholder="Search by team, college, email, or operative name..."
+                  placeholder="Search by team, college, email, or member name..."
                   onChange={(event) => setSearch(event.target.value)}
                 />
               </div>
@@ -428,7 +445,7 @@ export default function AdminDashboard() {
               
               <div className="flex gap-2">
                 <select 
-                  className="px-4 py-3 text-sm font-medium bg-[#0a0a0a] border border-gray-800 rounded-xl text-gray-300 outline-none focus:border-emerald-500/50 cursor-pointer appearance-none min-w-[140px]" 
+                  className="px-4 py-3 text-sm font-medium bg-[#0a0a0a] border border-gray-800 rounded-xl text-gray-300 outline-none focus:border-green-500/50 cursor-pointer appearance-none min-w-[140px]" 
                   value={trackFilter} 
                   onChange={(event) => setTrackFilter(event.target.value)}
                 >
@@ -439,7 +456,7 @@ export default function AdminDashboard() {
                 </select>
                 
                 <select 
-                  className="px-4 py-3 text-sm font-medium bg-[#0a0a0a] border border-gray-800 rounded-xl text-gray-300 outline-none focus:border-emerald-500/50 cursor-pointer appearance-none min-w-[140px]" 
+                  className="px-4 py-3 text-sm font-medium bg-[#0a0a0a] border border-gray-800 rounded-xl text-gray-300 outline-none focus:border-green-500/50 cursor-pointer appearance-none min-w-[140px]" 
                   value={sort} 
                   onChange={(event) => setSort(event.target.value as SortKey)}
                 >
@@ -461,7 +478,7 @@ export default function AdminDashboard() {
             <div className="bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
               {loading && !records.length ? (
                 <div className="py-24 flex flex-col justify-center items-center gap-4 text-gray-500">
-                  <LoaderCircle size={32} className="animate-spin text-emerald-500" />
+                  <LoaderCircle size={32} className="animate-spin text-green-500" />
                   <span className="text-lg font-medium">Fetching secure records...</span>
                 </div>
               ) : !filtered.length ? (
@@ -480,7 +497,7 @@ export default function AdminDashboard() {
                         <th className="px-8 py-5">Ident / Timestamp</th>
                         <th className="px-8 py-5">Team Origin</th>
                         <th className="px-8 py-5">Track Assignment</th>
-                        <th className="px-8 py-5 min-w-[280px]">Operatives Roster</th>
+                        <th className="px-8 py-5 min-w-[280px]">Team Members</th>
                         <th className="px-8 py-5">Comms & Data</th>
                         <th className="px-8 py-5">Clearance</th>
                         <th className="px-8 py-5 text-right">Actions</th>
@@ -492,7 +509,7 @@ export default function AdminDashboard() {
                         return (
                           <tr key={record.id} className="hover:bg-gray-800/20 transition-colors group">
                             <td className="px-8 py-6 align-top">
-                              <code className="block font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg w-fit mb-2 shadow-sm">
+                              <code className="block font-mono text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-lg w-fit mb-2 shadow-sm">
                                 {record.passId}
                               </code>
                               <span className="text-xs text-gray-500 font-medium">
@@ -506,12 +523,25 @@ export default function AdminDashboard() {
                             
                             <td className="px-8 py-6 align-top">
                               <div className="font-bold text-gray-100 text-base whitespace-normal break-words max-w-[220px] leading-tight mb-1">{record.teamName}</div>
-                              <div className="text-xs font-medium text-gray-500 whitespace-normal break-words max-w-[220px]">{record.collegeName}</div>
+                              <div className="text-xs font-medium text-gray-500 whitespace-normal break-words max-w-[220px] mb-4">{record.collegeName}</div>
+                              {record.status !== "shortlisted" && (
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to shortlist ${record.teamName}?`)) {
+                                      setData((current) => current ? { ...current, records: current.records.map((r) => r.id === record.id ? { ...r, status: "shortlisted" } : r) } : current);
+                                      updateRegistrationStatus(record.id, "shortlisted").catch(() => refresh());
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+                                >
+                                  <BadgeCheck size={14} /> Shortlist Team
+                                </button>
+                              )}
                             </td>
                             
                             <td className="px-8 py-6 align-top">
                               <div className="font-bold text-gray-200 mb-1">
-                                <span className="text-emerald-500">{record.problemId}</span> {record.alien}
+                                <span className="text-green-500">{record.problemId}</span> {record.alien}
                               </div>
                               <div className="text-xs font-medium text-gray-500 whitespace-normal break-words max-w-[220px]">{track?.title}</div>
                             </td>
@@ -532,32 +562,19 @@ export default function AdminDashboard() {
                             </td>
                             
                             <td className="px-8 py-6 align-top">
-                              <a href={`mailto:${record.emailId}`} className="inline-flex text-sm text-gray-300 hover:text-emerald-400 font-medium mb-3 transition-colors">
-                                {record.emailId}
-                              </a>
-                              <div className="block">
-                                {record.pptUrl ? (
-                                  <a 
-                                    href={record.pptUrl} 
-                                    target="_blank" 
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
-                                  >
-                                    <Download size={14} /> View Pitch Deck
-                                  </a>
-                                ) : (
-                                  <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-gray-900 text-gray-600 rounded-lg border border-gray-800">
-                                    No File Attached
-                                  </span>
-                                )}
-                              </div>
+                              <button
+                                onClick={() => setSelectedTeam(record)}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+                              >
+                                <Search size={14} /> View Submission
+                              </button>
                             </td>
                             
                             <td className="px-8 py-6 align-top">
                               <select
-                                className={`text-xs font-bold border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer transition-all appearance-none pr-8 bg-no-repeat ${
+                                className={`text-xs font-bold border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500/50 cursor-pointer transition-all appearance-none pr-8 bg-no-repeat ${
                                   record.status === 'registered' ? 'bg-[#0a0a0a] border-gray-700 text-gray-300' :
-                                  record.status === 'shortlisted' ? 'bg-emerald-950 border-emerald-500/50 text-emerald-400' :
+                                  record.status === 'shortlisted' ? 'bg-emerald-950 border-green-500/50 text-green-400' :
                                   'bg-red-950 border-red-500/50 text-red-400'
                                 }`}
                                 style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em' }}
@@ -616,12 +633,109 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-            
-            {/* Bottom Padding spacer */}
-            <div className="h-12"></div>
+
+            <div className="mt-12 text-center text-gray-600 text-xs tracking-widest font-bold pb-8">
+              END OF RECORDS
+            </div>
           </div>
         </div>
       </main>
+
+      {/* ---------------- Submission Modal ---------------- */}
+      {selectedTeam && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111111] border border-gray-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800 sticky top-0 bg-[#111111] z-10">
+              <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                  <Search size={16} />
+                </div>
+                Team Submission
+              </h2>
+              <button onClick={() => setSelectedTeam(null)} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-8 space-y-8">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Team Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
+                    <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Team Name</p>
+                    <p className="font-bold text-gray-200 text-lg">{selectedTeam.teamName}</p>
+                  </div>
+                  <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
+                    <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">College</p>
+                    <p className="font-bold text-gray-200 text-lg">{selectedTeam.collegeName}</p>
+                  </div>
+                  <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
+                    <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Track</p>
+                    <p className="font-bold text-green-400 text-lg">{selectedTeam.problemId} - {selectedTeam.alien}</p>
+                  </div>
+                  <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
+                    <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Contact Email</p>
+                    <a href={`mailto:${selectedTeam.emailId}`} className="font-bold text-blue-400 hover:underline text-lg truncate block">{selectedTeam.emailId}</a>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Roster ({selectedTeam.members?.length || 0})</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {selectedTeam.members?.map((member, i) => (
+                    <div key={i} className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800 flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 font-bold shrink-0">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-200">{member.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">{member.course} · Year {String(member.year).replace(/^0/, "")}</p>
+                        <p className="text-xs text-gray-400 mt-1 font-mono">{member.phone}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Pitch Deck & Data</h3>
+                {selectedTeam.pptUrl ? (
+                  <div className="bg-[#0a0a0a] p-6 rounded-xl border border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center shrink-0 border border-blue-500/20">
+                        <Download size={28} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-200 text-lg">Submission File</p>
+                        <p className="text-sm text-gray-500 mt-1">View or download the presentation</p>
+                      </div>
+                    </div>
+                    <a href={selectedTeam.pptUrl} target="_blank" rel="noreferrer" className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 text-center shrink-0">
+                      Open File
+                    </a>
+                  </div>
+                ) : (
+                  <div className="bg-[#0a0a0a] p-8 rounded-xl border border-gray-800 text-center flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 bg-gray-900 text-gray-700 rounded-full flex items-center justify-center mb-3">
+                      <X size={24} />
+                    </div>
+                    <p className="text-gray-400 font-medium">No pitch deck was attached to this registration.</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="border-t border-gray-800 pt-6 flex justify-end gap-3">
+                <button 
+                  onClick={() => setSelectedTeam(null)}
+                  className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-colors"
+                >
+                  Close Window
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
