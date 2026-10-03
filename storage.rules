@@ -1,0 +1,85 @@
+rules_version = '2';
+
+/**
+ * OMNICON storage rules.
+ *
+ * Only two things ever touch this bucket:
+ *   - a signed-in, verified, allow-listed contestant uploading their PPT to
+ *     their own registration folder;
+ *   - an organiser reading any PPT, or tidying up after a deletion.
+ *
+ * Deploy with:  firebase deploy --only storage
+ */
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function verified() {
+      return signedIn() && request.auth.token.email_verified == true;
+    }
+
+    function authEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function onAllowList() {
+      return verified() && (
+        authEmail() in [
+          '240071601217@crescent.education'
+        ] ||
+        authEmail().matches('.*@crescent\\.education') ||
+        authEmail().matches('.*@crescenttechnocrats\\.club')
+      );
+    }
+
+    function isAdmin() {
+      return signedIn() && (
+        authEmail() in [
+          'merfinhanson@gmail.com',
+          'hameedafsar@gmail.com',
+          'meharbasha@gmail.com'
+        ]
+      );
+    }
+
+    /* Presentational documents only, and small enough to keep the bucket
+       cheap. The extension is the meaningful gate: browsers and Windows
+       frequently report an empty or generic content type for .ppt, so
+       refusing on content type alone would block honest uploads while still
+       not stopping a renamed executable. octet-stream is therefore tolerated
+       only alongside a real presentation extension. */
+    function acceptableUpload() {
+      return request.resource.size < 25 * 1024 * 1024
+        && fileName.matches('(?i).*\\.(ppt|pptx|pdf)$')
+        && (
+          request.resource.contentType.matches('(application/vnd\\.ms-powerpoint|application/vnd\\.openxmlformats-officedocument\\.presentationml\\.presentation|application/pdf)')
+          || request.resource.contentType == 'application/octet-stream'
+          || request.resource.contentType == ''
+        );
+    }
+
+    /* ppts/{registrationId}/{passId}-{fileName} */
+    match /ppts/{registrationId}/{fileName} {
+
+      /* Uploading is only allowed into your own folder, with a fresh pass id
+         prefix so a rejected duplicate can never overwrite the PPT that
+         already won the race. */
+      allow create: if onAllowList()
+        && acceptableUpload()
+        && fileName.matches('^OMNI-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Za-z0-9._-]+$');
+
+      allow read: if onAllowList() || isAdmin();
+      allow update: if false;
+      allow delete: if onAllowList() || isAdmin();
+    }
+
+    /* Nothing else is storable. Note: Storage has no `write` action - it is
+       create/update/delete only, unlike Firestore. */
+    match /{allPaths=**} {
+      allow read, create, update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,966 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   OMNICON — BEN 10 "Alien HUD" design system (dark)
+
+   The whole site sits in deep space-black. Omnitrix lime is the only true
+   accent; every alien track injects its own `--hue` so cards, bars and rings
+   light up in that species' colour.
+
+   Layers, back to front:
+     body            flat void
+     body::before    hex lattice + drifting auras
+     body::after     CRT scanlines + vignette
+     sections        content
+     .card / .hud-* angular panels with a hairline lime edge
+
+   Rules of the system:
+     - Square corners. The Omnitrix is angular; nothing here is rounded.
+     - Colour comes from `--hue`, which defaults to Omnitrix lime.
+     - Depth comes from inset top-highlights and outer glow, never from
+       soft drop shadows on light surfaces.
+   ========================================================================== */
+
+@theme {
+  /* ---- Surfaces, darkest to lightest ---- */
+  --color-void: #01050a;
+  --color-carbon: #050b11;
+  --color-panel: #0a151d;
+  --color-panel-2: #0e1e28;
+  --color-panel-3: #142a35;
+
+  /* ---- Lines ---- */
+  --color-line: #17323f;
+  --color-line-2: #245264;
+
+  /* ---- Type ---- */
+  --color-mist: #c6dde5;
+  --color-mist-2: #8ba7b4;
+  --color-mist-3: #5d7986;
+
+  /* The Omnitrix dial is drawn in these two: near-black rim and cross,
+     white power wedges. Both are load-bearing in OmnitrixMark.tsx. */
+  --color-ink: #01050a;
+  --color-paper-2: #ffffff;
+
+  /* ---- Omnitrix ---- */
+  --color-omni: #7cfc00;
+  --color-omni-bright: #b6ff66;
+  --color-omni-deep: #4ca800;
+  --color-omni-dark: #2f6b00;
+
+  /* ---- Signals ---- */
+  --color-alert: #ff4d3d;
+  --color-danger: #ff3b30;
+  --color-amber: #ffb300;
+  --color-cyan: #2ee6d6;
+
+  --font-display: var(--font-bangers), "Impact", "Haettenschweiler", sans-serif;
+  --font-body: var(--font-chakra), "Trebuchet MS", system-ui, sans-serif;
+}
+
+/* ==========================================================================
+   Root
+   ========================================================================== */
+
+:root {
+  --nav-h: 72px;
+  --gutter: clamp(1.15rem, 4vw, 2.5rem);
+  --shell: 1280px;
+
+  /* Default per-card accent. Any component can override with an inline
+     `--hue`, which is how each alien track gets its own colour. */
+  --hue: var(--color-omni);
+
+  --edge: rgb(124 252 0 / 0.16);
+  --edge-hot: rgb(124 252 0 / 0.42);
+
+  --glow-omni: 0 0 24px rgb(124 252 0 / 0.28);
+  --glow-hue: 0 0 26px color-mix(in srgb, var(--hue) 40%, transparent);
+
+  color-scheme: dark;
+}
+
+/* ==========================================================================
+   Reset
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--nav-h) + 24px);
+  background: var(--color-void);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100svh;
+  background: var(--color-void);
+  color: var(--color-mist);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ---- Layer 1: hex lattice + two slow auras ---- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 620px at 8% -8%, rgb(124 252 0 / 0.13), transparent 62%),
+    radial-gradient(760px 520px at 96% 12%, rgb(46 230 214 / 0.08), transparent 60%),
+    radial-gradient(900px 700px at 50% 108%, rgb(124 252 0 / 0.07), transparent 64%),
+    linear-gradient(30deg, rgb(124 252 0 / 0.05) 12%, transparent 12.5%, transparent 87%, rgb(124 252 0 / 0.05) 87.5%),
+    linear-gradient(150deg, rgb(124 252 0 / 0.05) 12%, transparent 12.5%, transparent 87%, rgb(124 252 0 / 0.05) 87.5%),
+    linear-gradient(30deg, rgb(124 252 0 / 0.05) 12%, transparent 12.5%, transparent 87%, rgb(124 252 0 / 0.05) 87.5%),
+    linear-gradient(150deg, rgb(124 252 0 / 0.05) 12%, transparent 12.5%, transparent 87%, rgb(124 252 0 / 0.05) 87.5%),
+    linear-gradient(60deg, rgb(124 252 0 / 0.035) 25%, transparent 25.5%, transparent 75%, rgb(124 252 0 / 0.035) 75%);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    96px 166px,
+    96px 166px,
+    96px 166px,
+    96px 166px,
+    96px 166px;
+  animation: lattice-drift 60s linear infinite;
+}
+
+@keyframes lattice-drift {
+  to {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      48px 83px,
+      -48px 83px,
+      48px 83px,
+      -48px 83px,
+      0 0;
+  }
+}
+
+/* ---- Layer 2: scanlines + vignette, so the page reads as a screen ---- */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(180deg, rgb(255 255 255 / 0.022) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 40%, transparent 42%, rgb(1 5 10 / 0.72) 100%);
+}
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 0.98;
+  color: var(--color-paper-2);
+  text-wrap: balance;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg {
+  display: block;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+::selection {
+  background: var(--color-omni);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-omni);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==========================================================================
+   Layout primitives
+   ========================================================================== */
+
+.container {
+  width: min(var(--shell), 100% - var(--gutter) * 2);
+  margin-inline: auto;
+}
+
+.page-body {
+  min-height: 100svh;
+}
+
+.section {
+  position: relative;
+  padding-block: clamp(56px, 7.5vw, 104px);
+  scroll-margin-top: calc(var(--nav-h) + 16px);
+}
+
+.section--tight {
+  padding-block: clamp(42px, 5vw, 72px);
+}
+
+/* Hairline divider between panels — lime, not black, so it reads on dark. */
+.section + .section {
+  border-top: 1px solid var(--edge);
+}
+
+/* Alternating tint gives the long page a rhythm instead of one flat wall. */
+.aliens-section,
+.problems-section,
+.core-team-section {
+  background:
+    radial-gradient(1100px 520px at 50% 0%, rgb(124 252 0 / 0.05), transparent 70%),
+    var(--color-carbon);
+}
+
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 60vh;
+  padding: 3rem 1.5rem;
+  color: var(--color-mist-2);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   Section headers
+   ========================================================================== */
+
+.section-head {
+  max-width: 820px;
+  margin-bottom: clamp(30px, 4vw, 52px);
+}
+
+.section-head.is-centered {
+  margin-inline: auto;
+  text-align: center;
+}
+
+/* The tilted caption chip that labels every section. */
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-omni);
+  background: rgb(124 252 0 / 0.07);
+  border: 1px solid var(--edge-hot);
+  box-shadow: inset 0 0 18px rgb(124 252 0 / 0.08);
+}
+
+.kicker svg {
+  flex: none;
+}
+
+.section-title {
+  margin-top: 1.15rem;
+  font-size: clamp(2.3rem, 6.4vw, 4.2rem);
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 34px rgb(124 252 0 / 0.24);
+}
+
+/* Angled slash under the title. */
+.rule-line {
+  width: 116px;
+  height: 3px;
+  margin-top: 1.2rem;
+  background: linear-gradient(90deg, var(--color-omni), transparent);
+  transform: skewX(-28deg);
+  transform-origin: left;
+}
+
+.section-head.is-centered .rule-line {
+  margin-inline: auto;
+  transform-origin: center;
+}
+
+.section-sub {
+  margin-top: 1.3rem;
+  max-width: 66ch;
+  color: var(--color-mist-2);
+  font-size: clamp(0.97rem, 1.3vw, 1.06rem);
+}
+
+/* ==========================================================================
+   Panels
+   ========================================================================== */
+
+.card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgb(14 30 40 / 0.92), rgb(6 13 19 / 0.94));
+  border: 1px solid var(--color-line);
+  /* The inset line is the "top edge catching the light" of a metal plate. */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 18px 40px -28px rgb(0 0 0 / 0.9);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Lime edge, for panels that are the focus of a section. */
+.bracket {
+  border-color: var(--edge);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 1px rgb(124 252 0 / 0.05),
+    0 24px 60px -34px rgb(0 0 0 / 0.95);
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  border-color: color-mix(in srgb, var(--hue) 55%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    0 0 0 1px color-mix(in srgb, var(--hue) 30%, transparent),
+    0 0 34px -6px color-mix(in srgb, var(--hue) 34%, transparent),
+    0 28px 60px -30px rgb(0 0 0 / 0.95);
+}
+
+.hex-tag {
+  display: inline-block;
+  padding: 0.24rem 0.6rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-mist-2);
+  background: rgb(124 252 0 / 0.06);
+  border: 1px solid var(--edge);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn {
+  --btn-bg: var(--color-panel-2);
+  --btn-fg: var(--color-paper-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.78rem 1.6rem;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  border: 1px solid var(--color-line-2);
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease,
+    color 0.22s ease;
+}
+
+.btn svg {
+  flex: none;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  --btn-bg: var(--color-omni);
+  --btn-fg: #04120a;
+  border-color: var(--color-omni);
+  box-shadow: var(--glow-omni);
+}
+
+.btn-primary:hover:not(:disabled) {
+  --btn-bg: var(--color-omni-bright);
+  box-shadow: 0 0 34px rgb(124 252 0 / 0.5);
+}
+
+.btn-secondary {
+  --btn-bg: rgb(124 252 0 / 0.06);
+  --btn-fg: var(--color-omni);
+  border-color: var(--edge-hot);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  --btn-bg: rgb(124 252 0 / 0.14);
+  --btn-fg: var(--color-omni-bright);
+  box-shadow: 0 0 26px -4px rgb(124 252 0 / 0.4);
+}
+
+.btn-ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--color-mist-2);
+  border-color: var(--color-line-2);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  --btn-fg: #fff;
+  border-color: var(--color-mist-3);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.btn-sm {
+  padding: 0.56rem 1.05rem;
+  font-size: 0.92rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.link-btn {
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-omni);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: var(--color-omni-bright);
+}
+
+/* ==========================================================================
+   Omnitrix mark
+   ========================================================================== */
+
+.omni-mark {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.omni-core {
+  transform-origin: 50% 50%;
+  animation: omni-core 3.4s ease-in-out infinite;
+}
+
+@keyframes omni-core {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   Live status dot
+   ========================================================================== */
+
+.status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-omni);
+  box-shadow: 0 0 10px var(--color-omni);
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.65);
+  }
+}
+
+/* ==========================================================================
+   Transmission strips — the counter-scrolling marquee
+   ========================================================================== */
+
+.marquee {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: rgb(6 14 20 / 0.9);
+  border-block: 1px solid var(--edge);
+}
+
+.marquee + .marquee {
+  border-top: 0;
+}
+
+.marquee-label {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 1.1rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #04120a;
+  background: var(--color-omni);
+  white-space: nowrap;
+}
+
+.marquee--reverse .marquee-label {
+  color: var(--color-ink);
+  background: var(--color-cyan);
+}
+
+.marquee-viewport {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee-run {
+  display: flex;
+  align-items: center;
+  gap: 2.4rem;
+  width: max-content;
+  padding-right: 2.4rem;
+  animation: marquee-scroll 30s linear infinite;
+}
+
+.marquee--reverse .marquee-run {
+  animation-direction: reverse;
+  animation-duration: 38s;
+}
+
+.marquee:hover .marquee-run {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.marquee-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.4rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-mist-2);
+  white-space: nowrap;
+}
+
+.marquee-word::after {
+  content: "◆";
+  font-size: 0.5em;
+  color: var(--color-omni);
+}
+
+/* ==========================================================================
+   HUD chrome — the registration console
+   ========================================================================== */
+
+.hud-panel {
+  position: relative;
+  background: linear-gradient(180deg, rgb(13 27 36 / 0.94), rgb(5 11 17 / 0.96));
+  border: 1px solid var(--edge);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 1px rgb(124 252 0 / 0.04),
+    0 30px 70px -40px #000;
+}
+
+.hud-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem 1.1rem;
+  background: rgb(124 252 0 / 0.07);
+  border-bottom: 1px solid var(--edge);
+}
+
+.hud-dots {
+  display: inline-flex;
+  gap: 0.32rem;
+}
+
+.hud-dots i {
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--edge-hot);
+  background: rgb(124 252 0 / 0.22);
+}
+
+.hud-dots i:first-child {
+  background: var(--color-omni);
+  box-shadow: 0 0 8px var(--color-omni);
+}
+
+.hud-title {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.64rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-mist-2);
+}
+
+.hud-status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-omni);
+}
+
+.hud-body {
+  position: relative;
+  padding: clamp(1.3rem, 3vw, 2.2rem);
+}
+
+/* Faint hex weave inside the console. */
+.hud-body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(30deg, rgb(124 252 0 / 0.035) 12%, transparent 12.5%, transparent 87%, rgb(124 252 0 / 0.035) 87.5%),
+    linear-gradient(150deg, rgb(124 252 0 / 0.035) 12%, transparent 12.5%, transparent 87%, rgb(124 252 0 / 0.035) 87.5%);
+  background-size: 44px 76px;
+  mask-image: linear-gradient(180deg, #000, transparent 70%);
+}
+
+/* ==========================================================================
+   Form controls
+   ========================================================================== */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-mist-2);
+}
+
+.field-label svg {
+  color: var(--color-omni);
+}
+
+.input {
+  width: 100%;
+  padding: 0.72rem 0.9rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  background: rgb(3 8 12 / 0.75);
+  border: 1px solid var(--color-line);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.input::placeholder {
+  color: var(--color-mist-3);
+}
+
+.input:focus {
+  outline: none;
+  background: rgb(4 11 16 / 0.9);
+  border-color: var(--color-omni);
+  box-shadow: 0 0 0 1px var(--color-omni), 0 0 22px -6px rgb(124 252 0 / 0.55);
+}
+
+.input[readonly] {
+  color: var(--color-mist-2);
+  background: rgb(255 255 255 / 0.03);
+  cursor: not-allowed;
+}
+
+select.input {
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-omni) 50%),
+    linear-gradient(135deg, var(--color-omni) 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(50% + 2px),
+    calc(100% - 13px) calc(50% + 2px);
+  background-size: 7px 7px, 7px 7px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+select.input option {
+  background: var(--color-panel);
+  color: #fff;
+}
+
+textarea.input {
+  resize: vertical;
+  min-height: 128px;
+  line-height: 1.6;
+}
+
+.has-error .input {
+  border-color: var(--color-alert);
+  background: rgb(255 77 61 / 0.06);
+}
+
+.has-error .input:focus {
+  box-shadow: 0 0 0 1px var(--color-alert), 0 0 22px -6px rgb(255 77 61 / 0.5);
+}
+
+.field-error {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--color-alert);
+}
+
+.field-hint {
+  font-size: 0.83rem;
+  color: var(--color-mist-3);
+}
+
+.field-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.field-count {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  color: var(--color-mist-3);
+}
+
+/* ==========================================================================
+   Alerts + console log
+   ========================================================================== */
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.8rem 1rem;
+  font-weight: 600;
+  font-size: 0.94rem;
+  border: 1px solid;
+}
+
+.alert svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.alert-error {
+  color: #ffd9d5;
+  background: rgb(255 77 61 / 0.1);
+  border-color: rgb(255 77 61 / 0.4);
+}
+
+.alert-info {
+  color: #d6f7ff;
+  background: rgb(46 230 214 / 0.08);
+  border-color: rgb(46 230 214 / 0.34);
+}
+
+.alert-ok {
+  color: #e4ffcf;
+  background: rgb(124 252 0 / 0.09);
+  border-color: var(--edge-hot);
+}
+
+.log-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.log-line {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+  color: var(--color-mist-2);
+}
+
+.log-line::before {
+  content: "▸";
+  color: var(--color-omni);
+}
+
+/* ==========================================================================
+   Scroll reveal
+   ========================================================================== */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ==========================================================================
+   Scrollbars
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+  border-left: 1px solid var(--color-line);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-carbon);
+  border: 1px solid var(--color-line-2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-omni-dark);
+  border-color: var(--color-omni-deep);
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

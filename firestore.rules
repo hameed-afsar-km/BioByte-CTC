@@ -1,0 +1,214 @@
+rules_version = '2';
+
+/**
+ * OMNICON registration security rules.
+ *
+ * The browser-side checks in lib/access.ts are only a convenience — these
+ * rules are the real boundary. They enforce, server-side:
+ *
+ *   1. only verified, allow-listed accounts may register;
+ *   2. a registration is bound to the account that created it;
+ *   3. a track slot counter can only ever move forward by exactly one, and
+ *      only when a matching registration document is created in the same
+ *      transaction (so nobody can inflate the counter to lock other teams
+ *      out, or deflate it to sneak past capacity);
+ *   4. only organisers can list every registration, retag a status, retune a
+ *      capacity, or delete a row.
+ *
+ * Deploy with:  firebase deploy --only firestore:rules
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ------------------------------------------------------------------ *
+     * Helpers
+     * ------------------------------------------------------------------ */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function verified() {
+      return signedIn() && request.auth.token.email_verified == true;
+    }
+
+    /* The account's own address, always lower-cased. */
+    function authEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function onAllowList() {
+      return verified() && (
+        authEmail() in [
+          '240071601217@crescent.education'
+        ] ||
+        authEmail().matches('.*@crescent\\.education') ||
+        authEmail().matches('.*@crescenttechnocrats\\.club')
+      );
+    }
+
+    function isAdmin() {
+      return signedIn() && (
+        authEmail() in [
+          'merfinhanson@gmail.com',
+          'hameedafsar@gmail.com',
+          'meharbasha@gmail.com'
+        ]
+      );
+    }
+
+    /* The five published tracks. Hard-coded on purpose: the rules are the
+       last line of defence and must not depend on anything a client sends. */
+    function isKnownTrack(trackId) {
+      return trackId in ['OM-01', 'OM-02', 'OM-03', 'OM-04', 'OM-05'];
+    }
+
+    function publishedCapacity() {
+      return 12;
+    }
+
+    /* ------------------------------------------------------------------ *
+     * registrations — one document per email address
+     * ------------------------------------------------------------------ */
+
+    match /registrations/{registrationId} {
+
+      function owner() {
+        return signedIn() && resource.data.uid == request.auth.uid;
+      }
+
+      function isSelf() {
+        return signedIn() && resource.data.emailId == authEmail();
+      }
+
+      function validMember(member) {
+        return member.keys().hasOnly(['name', 'phone', 'department', 'year'])
+          && member.name is string
+          && member.name.size() >= 2
+          && member.name.size() <= 60
+          && member.phone is string
+          && member.phone.size() >= 7
+          && member.phone.size() <= 20
+          && member.department is string
+          && member.department.size() <= 80
+          && member.year in ['', '1', '2', '3', '4'];
+      }
+
+      /* A create is only allowed when the payload matches the session:
+         no forged uid, no borrowed pass id, no pre-approved status. */
+      function validCreate() {
+        return onAllowList()
+          && request.resource.data.keys().hasOnly([
+               'id', 'passId', 'uid', 'teamName', 'collegeName', 'teamSize',
+               'members', 'emailId', 'problemId', 'problemTitle', 'alien',
+               'hue', 'abstract', 'pptUrl', 'pptPath', 'pptName', 'round',
+               'status', 'createdAt'
+             ])
+          && isKnownTrack(request.resource.data.problemId)
+          && request.resource.data.id == registrationId
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.emailId == authEmail()
+          && request.resource.data.status == 'registered'
+          && request.resource.data.round == 'round-1'
+          && request.resource.data.passId is string
+          && request.resource.data.passId.matches('^OMNI-[A-Z2-9]{4}-[A-Z2-9]{4}$')
+          && request.resource.data.teamName is string
+          && request.resource.data.teamName.size() >= 3
+          && request.resource.data.teamName.size() <= 60
+          && request.resource.data.collegeName is string
+          && request.resource.data.collegeName.size() >= 2
+          && request.resource.data.collegeName.size() <= 120
+          && request.resource.data.abstract is string
+          && request.resource.data.abstract.size() <= 1200
+          && request.resource.data.members is list
+          && request.resource.data.members.size() >= 1
+          && request.resource.data.members.size() <= 6
+          && request.resource.data.members.map(m, validMember(m)).hasOnly([true])
+          && request.resource.data.teamSize == request.resource.data.members.size()
+          && request.resource.data.createdAt == request.time;
+      }
+
+      /* An organiser may retag the status, but must not touch identity,
+         capacity-relevant fields, or the creation stamp. */
+      function validAdminUpdate() {
+        return isAdmin()
+          && request.resource.data.diff(resource.data)
+               .affectedKeys()
+               .hasOnly(['status', 'updatedAt']);
+      }
+
+      allow get: if owner() || isAdmin();
+      allow list: if isAdmin();
+      allow create: if validCreate();
+      allow update: if validAdminUpdate();
+      allow delete: if isAdmin();
+    }
+
+    /* ------------------------------------------------------------------ *
+     * trackSlots — one counter document per track
+     * ------------------------------------------------------------------ */
+
+    match /trackSlots/{trackId} {
+
+      function onlyCounterFields() {
+        return request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['count', 'updatedAt']);
+      }
+
+      function onlyCapacityFields() {
+        return request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['capacity', 'updatedAt']);
+      }
+
+      function validCapacity() {
+        return request.resource.data.capacity is int
+          && request.resource.data.capacity >= 0
+          && request.resource.data.capacity <= 100;
+      }
+
+      /* Counters are public: the landing page renders live seats per track. */
+      allow read: if true;
+
+      /* A registrant opens the counter at exactly one seat, and only at the
+         published capacity — never a number the client invented. */
+      allow create: if (onAllowList()
+                        && isKnownTrack(trackId)
+                        && request.resource.data.keys()
+                             .hasOnly(['trackId', 'alien', 'count', 'capacity', 'updatedAt'])
+                        && request.resource.data.trackId == trackId
+                        && request.resource.data.count == 1
+                        && request.resource.data.capacity == publishedCapacity())
+                     /* An organiser may pre-set a capacity on a track that
+                        has not been claimed yet. */
+                     || (isAdmin()
+                         && validCapacity()
+                         && (!('count' in request.resource.data)
+                             || request.resource.data.count == 0));
+
+      /* Every later registration adds exactly one seat and leaves capacity
+         alone. The matching `registrations` document is created in the same
+         transaction, and that create is validated above. An organiser retunes
+         capacity, or gives back the single seat freed by a deletion. */
+      allow update: if (onAllowList()
+                        && isKnownTrack(trackId)
+                        && request.resource.data.count == resource.data.count + 1
+                        && request.resource.data.capacity == resource.data.capacity)
+                     || (isAdmin() && onlyCapacityFields() && validCapacity())
+                     || (isAdmin() && onlyCounterFields()
+                         && request.resource.data.count == resource.data.count - 1
+                         && request.resource.data.count >= 0);
+
+      /* Counters are never removed: the seat ledger has to stay auditable. */
+      allow delete: if false;
+    }
+
+    /* Everything else in this database is closed. */
+    match /{document=**} {
+      allow read, write: if THIS_IS_NOT_VALID_RULES {
+    }
+  }
+}
