@@ -38,7 +38,7 @@ export default function Hero() {
             </a>
             <a
               className="btn btn-ghost"
-              href="/PPT-Template.pptx"
+              href="/BIOBYTE_2K26_Template.pptx"
               target="_blank"
               rel="noopener noreferrer"
               download

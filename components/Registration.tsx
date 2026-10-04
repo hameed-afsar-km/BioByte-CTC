@@ -116,6 +116,7 @@ export default function Registration() {
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
   const [restoringCache, setRestoringCache] = useState(false);
   const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const isRestoringRef = useRef(false);
   const hasInitializedRef = useRef(false);
@@ -388,10 +389,16 @@ export default function Registration() {
 
     setError(null);
     setNotice(null);
+    setShowConfirmModal(true);
+  };
+
+  const executeSubmit = async () => {
+    setShowConfirmModal(false);
     setSubmitting(true);
     setSubmitStatus(null);
 
     try {
+      const draft = { ...form, emailId: email };
       const { id, passId } = await submitRegistration({ 
         draft, 
         uid: user?.uid ?? null,
@@ -838,7 +845,7 @@ export default function Registration() {
                     <p className="field-hint">
                       Pick a track to review its mission file before you confirm it.{" "}
                       <a
-                        href="/PPT-Template.pptx"
+                        href="/BIOBYTE_2K26_Template.pptx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -941,6 +948,54 @@ export default function Registration() {
         onConfirm={confirmTrack}
         onCancel={() => setPendingTrackId(null)}
       />
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-2xl transition-all duration-300">
+          <div className="relative w-full max-w-md bg-[#ffffff08] backdrop-blur-3xl border border-white/10 rounded-[24px] p-10 shadow-2xl flex flex-col items-center text-center overflow-hidden animate-slide-up gap-8">
+            
+            {/* Subtle soft gradient orbs */}
+            <div className="absolute -top-20 -right-20 w-48 h-48 bg-emerald-500/20 rounded-full blur-[60px] pointer-events-none" />
+            <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-emerald-500/10 rounded-full blur-[60px] pointer-events-none" />
+
+            {/* Logos */}
+            <div className="flex items-center justify-center gap-6 relative z-10 w-full mt-2">
+              <img src="/ctc.png" alt="CTC Logo" className="h-14 w-auto object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
+              <div className="w-px h-12 bg-white/10 rounded-full" />
+              <img src="/biobyte.png" alt="BioByte Logo" className="h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
+            </div>
+            
+            {/* Title & Text Container */}
+            <div className="flex flex-col gap-3 relative z-10">
+              <h3 className="text-2xl font-bold text-white tracking-tight m-0 font-sans">
+                Confirm Submission
+              </h3>
+              <p className="text-gray-400 text-sm leading-relaxed m-0 font-sans">
+                Please ensure all details are accurate. Once submitted, your <span className="text-white font-semibold">team's registration</span> and <span className="text-white font-semibold">mission data</span> <span className="text-emerald-400 font-bold">cannot be modified</span>.
+              </p>
+            </div>
+            
+            {/* Buttons */}
+            <div className="flex gap-4 w-full relative z-10 mt-2">
+              <button 
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-gray-300 font-medium rounded-xl transition-colors border border-white/5 text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={executeSubmit}
+                className="flex-1 py-3.5 px-4 relative group overflow-hidden rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm uppercase tracking-wider transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(16,185,129,0.8)] active:scale-95 border border-emerald-400/50"
+              >
+                <span className="relative flex items-center justify-center gap-2 z-10">
+                  Confirm <Send size={16} strokeWidth={2.5} />
+                </span>
+                <div className="absolute inset-0 h-full w-full bg-gradient-to-tr from-emerald-600 to-emerald-300 opacity-0 group-hover:opacity-20 transition-opacity duration-300 ease-out" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

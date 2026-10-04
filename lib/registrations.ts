@@ -10,9 +10,10 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes, uploadBytesResumable } from "firebase/storage";
+
 import { PROBLEMS } from "@/data/site";
 import { db, storage } from "./firebase";
+import { supabase } from "./supabase";
 import { cleanMembers } from "./validation";
 import type {
   Member,
@@ -108,40 +109,39 @@ export async function submitRegistration(input: {
         contentType = "application/octet-stream";
       }
 
-      const uploadTask = uploadBytesResumable(storageRef(storage, pptPath), draft.ppt, {
-        contentType: contentType,
-      });
+      try {
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += Math.floor(Math.random() * 15) + 5;
+          if (progress > 95) progress = 95;
+          onStatus?.(`Uploading mission data (${progress}%)`);
+        }, 500);
 
-      await new Promise<void>((resolve, reject) => {
-        const timeout = window.setTimeout(() => {
-          reject(
-            new RegistrationError(
-              "PPT_UPLOAD_TIMEOUT",
-              "The file upload did not receive a response. Firebase Storage may not be enabled for this project.",
-            ),
-          );
-          uploadTask.cancel();
-        }, UPLOAD_TIMEOUT_MS);
+        const { data, error } = await supabase.storage
+          .from('submissions')
+          .upload(pptPath, draft.ppt, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: contentType,
+          });
 
-        uploadTask.on(
-          "state_changed",
-          (snapshot) => {
-            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-            onStatus?.(`Uploading mission data (${progress}%)`);
-          },
-          (error) => {
-            window.clearTimeout(timeout);
-            reject(error);
-          },
-          () => {
-            window.clearTimeout(timeout);
-            resolve();
-          }
+        clearInterval(interval);
+        
+        if (error) {
+          throw error;
+        }
+
+        onStatus?.(`Uploading mission data (100%)`);
+      } catch (error) {
+        throw new RegistrationError(
+          "PPT_UPLOAD_FAILED",
+          "The PPT upload was rejected by the server. Check your connection and try again.",
         );
-      });
+      }
       
       onStatus?.("Mission data secured.");
-      pptUrl = await getDownloadURL(uploadTask.snapshot.ref);
+      const { data: { publicUrl } } = supabase.storage.from('submissions').getPublicUrl(pptPath);
+      pptUrl = publicUrl;
     } catch (error) {
       if (error instanceof RegistrationError) throw error;
       throw new RegistrationError(
@@ -191,7 +191,7 @@ export async function submitRegistration(input: {
     });
   } catch (error) {
     if (pptPath) {
-      await deleteObject(storageRef(storage, pptPath)).catch(() => undefined);
+      await supabase.storage.from('submissions').remove([pptPath]).catch(() => undefined);
     }
     throw error;
   }
@@ -270,6 +270,6 @@ export async function deleteRegistration(id: string) {
   /* Storage is not part of the transaction - Firestore would have to hold a
      write lock open across a file upload. A leftover PPT is harmless. */
   if (pptPath) {
-    await deleteObject(storageRef(storage, pptPath)).catch(() => undefined);
+    await supabase.storage.from('submissions').remove([pptPath]).catch(() => undefined);
   }
 }

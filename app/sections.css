@@ -157,18 +157,7 @@
   padding-block: calc(var(--nav-h) + 3.5rem) 5rem;
   background: #020a04;
 }
-.hero-bg {
-  background-image:
-    radial-gradient(circle at 50% 41%, rgb(124 252 0 / .24) 0 1%, transparent 24%),
-    radial-gradient(circle at 50% 41%, transparent 0 19%, rgb(124 252 0 / .18) 19.2% 19.7%, transparent 20%),
-    radial-gradient(circle at 50% 41%, transparent 0 31%, rgb(124 252 0 / .12) 31.2% 31.5%, transparent 32%),
-    linear-gradient(135deg, transparent 49.7%, rgb(124 252 0 / .08) 50%, transparent 50.3%),
-    linear-gradient(45deg, transparent 49.7%, rgb(124 252 0 / .08) 50%, transparent 50.3%),
-    linear-gradient(#03170a, #010703);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 64px 64px, 64px 64px, 100% 100%;
-  animation: hero-bg-drift 20s ease-in-out infinite;
-}
-@media (min-width: 768px) { .hero-bg { background-image: inherit; } }
+/* .hero-bg is defined further down */
 .hero-vignette { background: linear-gradient(180deg, rgb(1 7 3 / .8), transparent 30%, rgb(1 7 3 / .95)), radial-gradient(circle at center, transparent 10%, rgb(1 7 3 / .7) 78%); }
 .hero-content { max-width: 880px; margin-top: 0; }
 .hero-kicker, .hero-timer-label {

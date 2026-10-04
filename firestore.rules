@@ -40,9 +40,6 @@ service cloud.firestore {
 
     function onAllowList() {
       return verified() && (
-        authEmail() in [
-          '240071601217@crescent.education'
-        ] ||
         authEmail().matches('.*@crescent\\.education') ||
         authEmail().matches('.*@crescenttechnocrats\\.club')
       );
@@ -51,9 +48,10 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() && (
         authEmail() in [
-          'merfinhanson@gmail.com',
-          'hameedafsar@gmail.com',
-          'meharbasha@gmail.com',
+          '250151601005@crescent.education',
+          '240151601011@crescent.education',
+          '250151601072@crescent.education',
+          '240071601264@crescent.education',
           '240071601263@crescent.education'
         ]
       );
@@ -72,7 +70,7 @@ service cloud.firestore {
     match /registrations/{registrationId} {
 
       function owner() {
-        return signedIn() && resource.data.uid == request.auth.uid;
+        return signedIn() && resource != null && resource.data.uid == request.auth.uid;
       }
 
       function isSelf() {
@@ -139,7 +137,12 @@ service cloud.firestore {
           && request.resource.data.members is list
           && request.resource.data.members.size() >= 1
           && request.resource.data.members.size() <= 6
-          && request.resource.data.members.map(m, validMember(m)).hasOnly([true])
+          && (request.resource.data.members.size() < 1 || validMember(request.resource.data.members[0]))
+          && (request.resource.data.members.size() < 2 || validMember(request.resource.data.members[1]))
+          && (request.resource.data.members.size() < 3 || validMember(request.resource.data.members[2]))
+          && (request.resource.data.members.size() < 4 || validMember(request.resource.data.members[3]))
+          && (request.resource.data.members.size() < 5 || validMember(request.resource.data.members[4]))
+          && (request.resource.data.members.size() < 6 || validMember(request.resource.data.members[5]))
           && request.resource.data.teamSize == request.resource.data.members.size()
           && request.resource.data.createdAt == request.time;
       }
@@ -153,7 +156,7 @@ service cloud.firestore {
                .hasOnly(['status', 'statusReason', 'updatedAt']);
       }
 
-      allow get: if owner() || isAdmin();
+      allow get: if (resource == null && signedIn()) || owner() || isAdmin();
       allow list: if isAdmin();
       allow create: if validCreate();
       allow update: if validAdminUpdate();

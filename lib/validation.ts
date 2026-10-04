@@ -37,9 +37,9 @@ export function isValidPhone(value: string) {
 
 /** Rejects anything that is not a PPT/PDF, or is over the size cap. */
 export function validatePptFile(file: File | null): string | null {
-  if (!file) return "Upload your Round 1 PPT.";
-  if (!PPT_EXTENSIONS.test(file.name)) return "Only .ppt, .pptx or .pdf files are accepted.";
-  if (file.size > MAX_PPT_BYTES) return "File must be 10 MB or smaller.";
+  if (!file) return "A presentation file is required.";
+  if (!PPT_EXTENSIONS.test(file.name)) return "Must be a PPT, PPTX or PDF file.";
+  if (file.size > MAX_PPT_BYTES) return "File is too large (max 10MB).";
   return null;
 }
 

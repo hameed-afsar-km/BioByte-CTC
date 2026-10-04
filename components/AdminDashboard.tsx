@@ -16,7 +16,9 @@ import {
   Trash2,
   TriangleAlert,
   Users,
-  X
+  X,
+  FileDown,
+  UserCheck
 } from "lucide-react";
 import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from "firebase/auth";
 import { PROBLEMS } from "@/data/site";
@@ -75,16 +77,20 @@ export default function AdminDashboard() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "shortlisted" | "audit">("all");
   const [selectedTeam, setSelectedTeam] = useState<RegistrationRecord | null>(null);
-  /* Bumping this re-runs the load effect â€” the manual refresh button. */
+  /* Bumping this re-runs the load effect — the manual refresh button. */
   const [refreshKey, setRefreshKey] = useState(0);
-  const refresh = () => setRefreshKey((key) => key + 1);
+  const [isManualRefresh, setIsManualRefresh] = useState(false);
+  const refresh = (manual: boolean = false) => {
+    if (manual) setIsManualRefresh(true);
+    setRefreshKey((key) => key + 1);
+  };
 
   const authReady = isFirebaseReady ? user !== undefined : true;
   const isAdmin = isAdminEmail(user?.email);
 
   /* Loading is derived, not stored: a fetch is in flight whenever the data
      on hand is missing or was loaded for an older request key. */
-  const loading = isAdmin && (!data || data.key !== refreshKey);
+  const loading = isAdmin && isManualRefresh && (!data || data.key !== refreshKey);
   const records = data?.records ?? NO_RECORDS;
   const auditLogs = data?.auditLogs ?? NO_AUDIT_LOGS;
 
@@ -121,16 +127,30 @@ export default function AdminDashboard() {
         if (cancelled) return;
         setData({ ...next, key: refreshKey });
         setLoadError(null);
+        setIsManualRefresh(false);
       })
       .catch((err: Error) => {
         if (cancelled) return;
         setLoadError(err?.message || "Could not read registrations. Check Firestore security rules.");
+        setIsManualRefresh(false);
       });
 
     return () => {
       cancelled = true;
     };
   }, [isAdmin, refreshKey]);
+
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+
+    const interval = setInterval(() => {
+      refresh();
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isAdmin]);
 
   const handleSignIn = async () => {
     setAuthError(null);
@@ -219,7 +239,60 @@ export default function AdminDashboard() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `omnicon-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `biobyte-teams-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportMembersCsv = () => {
+    const header = [
+      "S_No",
+      "Team Name",
+      "Student_Name",
+      "Student_ID(Reg.No)",
+      "Institute Name",
+      "Program_Type(UG/PG)",
+      "Year",
+      "Semester",
+      "Enter_Course",
+      "Email_ID",
+      "Mobile_Number",
+      "Residential_address",
+      "DOB"
+    ];
+
+    let sNo = 1;
+    const rows: unknown[][] = [];
+    
+    filtered.forEach((record) => {
+      record.members?.forEach((member) => {
+        const isPg = member.course?.toLowerCase().includes("m.") || 
+                     member.course?.toLowerCase().includes("master") ||
+                     member.course?.toLowerCase().includes("pg");
+        
+        rows.push([
+          sNo++,
+          record.teamName,
+          member.name,
+          member.registrationNo,
+          record.collegeName,
+          isPg ? "PG" : "UG",
+          member.year,
+          member.semester,
+          member.course,
+          member.email,
+          member.phone,
+          member.address,
+          member.dob
+        ]);
+      });
+    });
+
+    const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `biobyte-members-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -367,36 +440,48 @@ export default function AdminDashboard() {
             <h1 className="text-xl font-bold text-gray-100">Overview</h1>
             <p className="text-xs text-gray-500 font-medium mt-1 uppercase tracking-wider">Registration Dashboard</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
             <button 
-              onClick={refresh} 
+              onClick={() => refresh(true)} 
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm"
+              className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm shrink-0"
+              title="Refresh"
             >
               <RefreshCw size={16} className={loading ? "animate-spin text-green-500" : ""} /> 
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden md:inline">Refresh</span>
             </button>
             <button 
               onClick={exportCsv} 
               disabled={!filtered.length}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm disabled:opacity-50 shrink-0"
+              title="Export Teams"
             >
-              <Download size={16} /> 
-              <span className="hidden sm:inline">Export</span>
+              <FileDown size={16} /> 
+              <span className="hidden md:inline">Teams</span>
+            </button>
+            <button 
+              onClick={exportMembersCsv} 
+              disabled={!filtered.length}
+              className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm disabled:opacity-50 shrink-0"
+              title="Export Members"
+            >
+              <UserCheck size={16} /> 
+              <span className="hidden md:inline">Members</span>
             </button>
             <button 
               onClick={() => window.print()} 
               disabled={!filtered.length}
-              className="flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-400 rounded-xl text-sm font-bold text-black transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-green-500 hover:bg-green-400 rounded-xl text-sm font-bold text-black transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50 shrink-0"
+              title="Print"
             >
               <Printer size={16} /> 
-              <span className="hidden sm:inline">Print / PDF</span>
+              <span className="hidden md:inline">Print / PDF</span>
             </button>
           </div>
         </header>
 
         {/* Scrollable Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8">
           <div className="max-w-[1600px] mx-auto">
             
             {/* Stat Cards */}
@@ -623,9 +708,9 @@ export default function AdminDashboard() {
                                 title="Delete Registration"
                                 onClick={() => {
                                   if (!window.confirm(`Are you absolutely sure you want to delete the registration for ${record.teamName}?\nThis action is permanent and cannot be undone.`)) return;
-                                  deleteRegistration(record.id).then(refresh);
-                                }}
-                              >
+                                   deleteRegistration(record.id).then(() => refresh());
+                                 }}
+                               >
                                 <Trash2 size={18} />
                               </button>
                             </td>
@@ -707,6 +792,38 @@ export default function AdminDashboard() {
         </div>
       </main>
 
+      {/* Mobile Bottom Navbar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[72px] bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-gray-800 flex items-center justify-around z-40 pb-safe">
+        <button 
+          onClick={() => setActiveTab("all")} 
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeTab === 'all' ? 'text-green-400' : 'text-gray-500 hover:text-gray-300'}`}
+        >
+          <Users size={20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-1">All</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab("shortlisted")} 
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeTab === 'shortlisted' ? 'text-green-400' : 'text-gray-500 hover:text-gray-300'}`}
+        >
+          <BadgeCheck size={20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-1">Selected</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab("audit")} 
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeTab === 'audit' ? 'text-green-400' : 'text-gray-500 hover:text-gray-300'}`}
+        >
+          <ShieldAlert size={20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-1">Audit</span>
+        </button>
+        <button 
+          onClick={() => signOut(auth)} 
+          className="flex flex-col items-center justify-center w-full h-full space-y-1 text-red-500/70 hover:text-red-400"
+        >
+          <LogOut size={20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-1">Logout</span>
+        </button>
+      </nav>
+
       {/* ---------------- Submission Modal ---------------- */}
       {selectedTeam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -753,16 +870,40 @@ export default function AdminDashboard() {
               
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Roster ({selectedTeam.members?.length || 0})</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {selectedTeam.members?.map((member, i) => (
                     <div key={i} className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800 flex items-start gap-4">
                       <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 font-bold shrink-0">
                         {member.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-bold text-gray-200">{member.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">{member.course} · Year {String(member.year).replace(/^0/, "")}</p>
-                        <p className="text-xs text-gray-400 mt-1 font-mono">{member.phone}</p>
+                      <div className="flex-1 w-full">
+                        <p className="font-bold text-gray-200 text-lg mb-2">{member.name}</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Reg No</p>
+                            <p className="text-sm font-mono text-gray-300">{member.registrationNo}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Course & Year</p>
+                            <p className="text-sm text-gray-300">{member.course}, Yr {String(member.year).replace(/^0/, "")} (Sem {member.semester})</p>
+                          </div>
+                          <div className="col-span-2 sm:col-span-1">
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Email</p>
+                            <a href={`mailto:${member.email}`} className="text-sm text-blue-400 hover:underline truncate block">{member.email}</a>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Phone</p>
+                            <a href={`tel:${member.phone}`} className="text-sm font-mono text-blue-400 hover:underline">{member.phone}</a>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">DOB</p>
+                            <p className="text-sm text-gray-300">{member.dob}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Address</p>
+                            <p className="text-sm text-gray-300 whitespace-normal break-words">{member.address}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
