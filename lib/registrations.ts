@@ -10,7 +10,7 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes, uploadBytesResumable } from "firebase/storage";
 import { PROBLEMS } from "@/data/site";
 import { db, storage } from "./firebase";
 import { cleanMembers } from "./validation";
@@ -22,6 +22,7 @@ import type {
 } from "./types";
 
 export const REGISTRATIONS_COLLECTION = "registrations";
+const UPLOAD_TIMEOUT_MS = 30_000;
 
 export class RegistrationError extends Error {
   code: string;
@@ -72,8 +73,9 @@ export function generatePassId(): string {
 export async function submitRegistration(input: {
   draft: RegistrationDraft;
   uid: string | null;
+  onStatus?: (status: string) => void;
 }): Promise<{ id: string; passId: string }> {
-  const { draft, uid } = input;
+  const { draft, uid, onStatus } = input;
 
   const track = PROBLEMS.find((problem) => problem.id === draft.problemId);
   if (!track) {
@@ -93,11 +95,55 @@ export async function submitRegistration(input: {
     pptPath = `ppts/${id}/${passId}-${safeName}`;
 
     try {
-      const uploaded = await uploadBytes(storageRef(storage, pptPath), draft.ppt, {
-        contentType: draft.ppt.type || "application/octet-stream",
+      onStatus?.("Uploading mission data...");
+      let contentType = draft.ppt.type;
+      const lowerName = draft.ppt.name.toLowerCase();
+      if (lowerName.endsWith(".pdf")) {
+        contentType = "application/pdf";
+      } else if (lowerName.endsWith(".pptx")) {
+        contentType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+      } else if (lowerName.endsWith(".ppt")) {
+        contentType = "application/vnd.ms-powerpoint";
+      } else {
+        contentType = "application/octet-stream";
+      }
+
+      const uploadTask = uploadBytesResumable(storageRef(storage, pptPath), draft.ppt, {
+        contentType: contentType,
       });
-      pptUrl = await getDownloadURL(uploaded.ref);
-    } catch {
+
+      await new Promise<void>((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          reject(
+            new RegistrationError(
+              "PPT_UPLOAD_TIMEOUT",
+              "The file upload did not receive a response. Firebase Storage may not be enabled for this project.",
+            ),
+          );
+          uploadTask.cancel();
+        }, UPLOAD_TIMEOUT_MS);
+
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            onStatus?.(`Uploading mission data (${progress}%)`);
+          },
+          (error) => {
+            window.clearTimeout(timeout);
+            reject(error);
+          },
+          () => {
+            window.clearTimeout(timeout);
+            resolve();
+          }
+        );
+      });
+      
+      onStatus?.("Mission data secured.");
+      pptUrl = await getDownloadURL(uploadTask.snapshot.ref);
+    } catch (error) {
+      if (error instanceof RegistrationError) throw error;
       throw new RegistrationError(
         "PPT_UPLOAD_FAILED",
         "The PPT upload was rejected by the server. Check your connection and try again.",
@@ -106,6 +152,7 @@ export async function submitRegistration(input: {
   }
 
   try {
+    onStatus?.("Encrypting and finalising registration...");
     await runTransaction(db, async (transaction) => {
       const registrationRef = doc(db, REGISTRATIONS_COLLECTION, id);
 

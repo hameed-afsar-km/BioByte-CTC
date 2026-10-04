@@ -1,7 +1,7 @@
 rules_version = '2';
 
 /**
- * OMNICON storage rules.
+ * BioByte storage rules.
  *
  * Only two things ever touch this bucket:
  *   - a signed-in, verified, allow-listed contestant uploading their PPT to
@@ -30,8 +30,7 @@ service firebase.storage {
         authEmail() in [
           '240071601217@crescent.education'
         ] ||
-        authEmail().matches('.*@crescent\\.education') ||
-        authEmail().matches('.*@crescenttechnocrats\\.club')
+        authEmail().matches('.*@crescent\\.education')
       );
     }
 

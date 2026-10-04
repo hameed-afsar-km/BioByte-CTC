@@ -119,7 +119,10 @@ export function validateDraft(draft: RegistrationDraft): FieldErrors {
     errors.problemId = "Select a mission file.";
   }
 
-  errors.ppt = validatePptFile(draft.ppt) ?? undefined;
+  const pptError = validatePptFile(draft.ppt);
+  if (pptError) {
+    errors.ppt = pptError;
+  }
 
   const abstract = draft.abstract.trim();
   if (abstract.length < ABSTRACT_MIN) {

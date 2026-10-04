@@ -73,7 +73,7 @@ const emptyMember = (): Member => ({
 
 const emptyForm = () => ({
   teamName: "",
-  collegeName: "",
+  collegeName: "BSA Crescent Institute of Science and Technology",
   teamSize: 0,
   members: [] as Member[],
   problemId: "",
@@ -113,6 +113,51 @@ export default function Registration() {
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [restoringCache, setRestoringCache] = useState(false);
+  const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
+
+  const isRestoringRef = useRef(false);
+  const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+
+    try {
+      const saved = localStorage.getItem("biobyte_registration_form");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Object.keys(parsed).length > 0 && parsed.teamName !== undefined) {
+          isRestoringRef.current = true;
+          setRestoringCache(true);
+          
+          setTimeout(() => {
+            setForm((current) => ({
+              ...current,
+              ...parsed,
+              collegeName: "BSA Crescent Institute of Science and Technology",
+              ppt: null
+            }));
+            isRestoringRef.current = false;
+            setRestoringCache(false);
+            setRestoredNotice("Local progress restored successfully.");
+            setTimeout(() => setRestoredNotice(null), 5000);
+          }, 1500);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to restore local form cache", e);
+      isRestoringRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isRestoringRef.current && hasInitializedRef.current) {
+      const { ppt, ...toSave } = form;
+      localStorage.setItem("biobyte_registration_form", JSON.stringify(toSave));
+    }
+  }, [form]);
 
   /* Track picked in the dropdown but not yet confirmed. The select stays on
      the old value until the confirmation modal is accepted. */
@@ -330,20 +375,30 @@ export default function Registration() {
 
     if (Object.keys(errors).length) {
       setError("Some fields need attention before you can transform.");
+      setTimeout(() => {
+        const errorElement = document.querySelector('.has-error');
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const input = errorElement.querySelector('input, select, textarea') as HTMLElement;
+          if (input) input.focus();
+        }
+      }, 50);
       return;
     }
 
     setError(null);
     setNotice(null);
     setSubmitting(true);
+    setSubmitStatus(null);
 
     try {
-      const { id, passId } = await withTimeout(
-        submitRegistration({ draft, uid: user?.uid ?? null }),
-        60000,
-        "Submission",
-      );
+      const { id, passId } = await submitRegistration({ 
+        draft, 
+        uid: user?.uid ?? null,
+        onStatus: (status) => setSubmitStatus(status)
+      });
 
+      localStorage.removeItem("biobyte_registration_form");
       router.push(`/confirmed?id=${encodeURIComponent(id)}&pass=${encodeURIComponent(passId)}`);
     } catch (err) {
       if (err instanceof RegistrationError) {
@@ -352,6 +407,8 @@ export default function Registration() {
         setError((err as Error)?.message || "Transmission failed. Please try again.");
       }
       setSubmitting(false);
+      setSubmitStatus(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -401,6 +458,13 @@ export default function Registration() {
             <p className="alert alert-info" role="status">
               <BadgeCheck size={17} aria-hidden="true" />
               <span>{notice}</span>
+            </p>
+          ) : null}
+
+          {restoredNotice ? (
+            <p className="alert alert-info" role="status">
+              <BadgeCheck size={17} aria-hidden="true" />
+              <span>{restoredNotice}</span>
             </p>
           ) : null}
 
@@ -507,7 +571,13 @@ export default function Registration() {
 
           {/* ============ STAGE 3 — REGISTRATION FORM ============ */}
           {stage === STAGE.FORM && (
-            <form className="pane" onSubmit={handleSubmit} noValidate>
+            <form className="pane relative" onSubmit={handleSubmit} noValidate>
+              {restoringCache && (
+                <div className="absolute inset-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl border border-green-500/30 min-h-[400px]">
+                  <LoaderCircle size={40} className="animate-spin text-green-500 mb-4" />
+                  <p className="text-green-400 font-bold tracking-widest uppercase text-sm">Restoring Progress...</p>
+                </div>
+              )}
               <div className="pane-head">
                 <span className="pane-icon" aria-hidden="true">
                   <Zap size={19} />
@@ -538,15 +608,7 @@ export default function Registration() {
                   error={fieldErrors.teamName}
                 />
 
-                <Field
-                  id="reg-college"
-                  icon={GraduationCap}
-                  label="College Name"
-                  placeholder="e.g. Crescent Institute"
-                  value={form.collegeName}
-                  onChange={update("collegeName")}
-                  error={fieldErrors.collegeName}
-                />
+
 
                 <div className={`field ${fieldErrors.teamSize ? "has-error" : ""}`}>
                   <label className="field-label" htmlFor="reg-size">
@@ -845,7 +907,7 @@ export default function Registration() {
                   ) : (
                     <Send size={16} />
                   )}
-                  {submitting ? "Transmitting…" : "Submit Registration"}
+                  {submitting ? (submitStatus || "Transmitting…") : "Submit Registration"}
                 </button>
 
                 <div className="submit-notes">

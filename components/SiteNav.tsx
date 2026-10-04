@@ -65,7 +65,7 @@ export default function SiteNav() {
               goTo("top");
             }}
           >
-            <img src="/CTC.png" className="brand-mark" alt="CTC Logo" />
+            <img src="/ctc.png" className="brand-mark" alt="CTC Logo" />
             <span className="brand-text">
               <span className="brand-name">{EVENT.name}</span>
               <span className="brand-sub">{EVENT.presenter}</span>

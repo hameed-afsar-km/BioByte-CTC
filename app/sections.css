@@ -502,6 +502,12 @@
   }
 }
 
+@media (max-width: 767px) {
+  .navbar-actions .btn-primary {
+    display: none;
+  }
+}
+
 /* ==========================================================================
    Hero — background images + animations
    ========================================================================== */
@@ -750,6 +756,12 @@
   gap: 1.5rem;
   flex-wrap: wrap;
   margin-top: clamp(2rem, 5vw, 3.5rem);
+}
+
+@media (max-width: 767px) {
+  .hero-foot {
+    display: none !important;
+  }
 }
 
 .hero-scroll {

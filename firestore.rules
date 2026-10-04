@@ -1,7 +1,7 @@
 rules_version = '2';
 
 /**
- * OMNICON registration security rules.
+ * BioByte registration security rules.
  *
  * The browser-side checks in lib/access.ts are only a convenience — these
  * rules are the real boundary. They enforce, server-side:
@@ -80,16 +80,34 @@ service cloud.firestore {
       }
 
       function validMember(member) {
-        return member.keys().hasOnly(['name', 'phone', 'department', 'year'])
+        return member.keys().hasOnly([
+            'name', 'registrationNo', 'year', 'semester', 'course', 'email',
+            'phone', 'address', 'dob'
+          ])
           && member.name is string
           && member.name.size() >= 2
-          && member.name.size() <= 60
+          && member.name.size() <= 80
+          && member.registrationNo is string
+          && member.registrationNo.size() >= 2
+          && member.registrationNo.size() <= 50
+          && member.year in ['1', '2', '3', '4']
+          && member.semester is string
+          && member.semester.size() >= 1
+          && member.semester.size() <= 20
+          && member.course is string
+          && member.course.size() >= 2
+          && member.course.size() <= 100
+          && member.email is string
+          && member.email.matches('.*@crescent\\.education')
           && member.phone is string
-          && member.phone.size() >= 7
+          && member.phone.size() >= 10
           && member.phone.size() <= 20
-          && member.department is string
-          && member.department.size() <= 80
-          && member.year in ['', '1', '2', '3', '4'];
+          && member.address is string
+          && member.address.size() >= 5
+          && member.address.size() <= 500
+          && member.dob is string
+          && member.dob.size() >= 2
+          && member.dob.size() <= 30;
       }
 
       /* A create is only allowed when the payload matches the session:
