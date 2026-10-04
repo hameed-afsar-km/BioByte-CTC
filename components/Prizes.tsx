@@ -1,125 +1,114 @@
 "use client";
 
-import { useState, useRef, MouseEvent } from "react";
+import { useState } from "react";
 import { PRIZES } from "@/data/site";
 import Reveal from "./Reveal";
-import SectionHead from "./SectionHead";
-
-function InteractivePrizeCard({ prize, index }: { prize: typeof PRIZES[0]; index: number }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    setMousePosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
-
-  return (
-    <Reveal
-      as="article"
-      className="prize-hologram-card group"
-      delay={index * 120}
-      style={{ 
-        "--hue": prize.hue,
-        transform: isHovered ? "translateY(-8px) scale(1.02)" : "translateY(0) scale(1)",
-        zIndex: isHovered ? 20 : 1,
-        transition: "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s"
-      } as React.CSSProperties}
-    >
-      <div 
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className="w-full h-full relative p-8 cursor-crosshair"
-      >
-        {/* Interactive Spotlight Glow */}
-        <div 
-          className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-0 rounded-2xl"
-          style={{
-            background: `radial-gradient(circle 250px at ${mousePosition.x}px ${mousePosition.y}px, color-mix(in srgb, ${prize.hue} 35%, transparent), transparent 70%)`,
-            opacity: isHovered ? 1 : 0,
-          }}
-        />
-        
-        {/* Border highlight effect */}
-        <div 
-          className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-10 rounded-2xl border-2"
-          style={{
-            borderColor: isHovered ? prize.hue : 'transparent',
-            opacity: isHovered ? 0.5 : 0,
-            boxShadow: isHovered ? `inset 0 0 20px color-mix(in srgb, ${prize.hue} 20%, transparent)` : 'none'
-          }}
-        />
-
-        <div className="prize-hologram-content relative z-20 pointer-events-none">
-          <div className="prize-header mb-6">
-            <span className="prize-place block text-sm font-bold tracking-[0.2em] uppercase text-gray-500 mb-1">{prize.place}</span>
-            <h4 className="prize-alien text-2xl font-black uppercase tracking-wider" style={{ color: prize.hue, textShadow: isHovered ? `0 0 15px ${prize.hue}` : "none", transition: "text-shadow 0.3s" }}>{prize.alien}</h4>
-          </div>
-          
-          <h3 className="prize-amount text-4xl font-black text-white tracking-tight mb-4" style={{ textShadow: isHovered ? `0 0 20px color-mix(in srgb, ${prize.hue} 50%, transparent)` : "none", transition: "text-shadow 0.3s" }}>
-            <span className={`transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-0 absolute"}`}>
-              {prize.amount}
-            </span>
-            <span className={`transition-opacity duration-300 ${isHovered ? "opacity-0 absolute" : "opacity-100"}`}>
-              ₹ ?,???
-            </span>
-          </h3>
-          
-          <div className="prize-divider h-px w-full mb-4" style={{ background: `linear-gradient(90deg, transparent, ${prize.hue}, transparent)`, opacity: isHovered ? 0.8 : 0.2, transition: "opacity 0.3s" }} />
-          
-          <p className="prize-text text-gray-400 text-sm leading-relaxed max-w-[280px] mx-auto transition-all duration-300" style={{ opacity: isHovered ? 1 : 0, transform: isHovered ? 'translateY(0)' : 'translateY(10px)' }}>
-            {prize.text}
-          </p>
-          {!isHovered && (
-             <p className="absolute bottom-8 left-0 right-0 text-gray-600 text-xs font-bold tracking-widest uppercase animate-pulse">
-               Hover to Reveal
-             </p>
-          )}
-        </div>
-      </div>
-    </Reveal>
-  );
-}
 
 export default function Prizes() {
+  const [hoveredId, setHoveredId] = useState<string | null>(PRIZES[0].id);
+
   return (
-    <section id="prizes" className="section prizes-section relative overflow-hidden py-24 bg-[#0a0a0a]">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-green-900/20 via-[#0a0a0a] to-[#0a0a0a]" />
+    <section id="prizes" className="section relative h-screen min-h-[700px] flex flex-col justify-center items-center bg-[#050505] overflow-hidden py-24 lg:py-0">
       
-      <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6">
-        <SectionHead
-          kicker="Mission Rewards"
-          title="Prize Vault"
-          sub="Unlock the ultimate rewards. Complete your mission to secure these prizes."
-          centered
-        />
+      {/* Background Ambience */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-5 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-green-900/10 rounded-full blur-[150px] pointer-events-none" />
 
-        <div className="flex justify-center mt-6">
-          <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-gradient-to-r from-green-900/40 to-emerald-900/40 border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.15)] backdrop-blur-sm animate-pulse-slow">
-            <div className="flex flex-col text-right">
-              <span className="text-xs font-bold text-green-400 tracking-widest uppercase">Total Prize Pool</span>
-              <span className="text-3xl font-black text-white tracking-tight">₹ 5,000</span>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 border border-green-500/50 shadow-[inset_0_0_15px_rgba(34,197,94,0.4)]">
-              <span className="text-2xl font-bold font-serif">₹</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {PRIZES.map((prize, index) => (
-            <InteractivePrizeCard key={prize.id} prize={prize} index={index} />
-          ))}
-        </div>
+      {/* Header */}
+      <div className="z-10 mb-12 lg:mb-20 flex flex-col items-center text-center">
+         <Reveal as="h2" delay={100} className="text-[10px] lg:text-xs font-bold tracking-[0.5em] text-green-500 uppercase mb-3 drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]">
+           Mission Rewards
+         </Reveal>
+         <Reveal as="h1" delay={200} className="text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase italic tracking-tighter drop-shadow-2xl mb-6">
+           Prize Vault
+         </Reveal>
+         
+         <Reveal as="div" delay={300} className="inline-flex items-center gap-4 px-6 py-2 bg-black/60 border border-green-500/30 rounded-full backdrop-blur-md shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+            <span className="text-[9px] lg:text-[10px] font-bold tracking-[0.3em] text-green-400 uppercase">Total Pool</span>
+            <span className="text-xl lg:text-2xl font-black text-white tracking-tight drop-shadow-md">₹5,000</span>
+         </Reveal>
       </div>
+
+      {/* Interactive Accordion */}
+      <Reveal as="div" delay={400} className="relative w-full max-w-[1200px] mx-auto px-4 z-10 flex flex-col lg:flex-row h-[70vh] lg:h-[500px] gap-3 lg:gap-4">
+        {PRIZES.map((prize, index) => {
+           const isActive = hoveredId === prize.id;
+           
+           return (
+             <div 
+               key={prize.id}
+               onMouseEnter={() => setHoveredId(prize.id)}
+               onClick={() => setHoveredId(prize.id)}
+               className={`relative overflow-hidden rounded-[2rem] border bg-[#080808]/80 backdrop-blur-xl transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.3,1)] cursor-pointer group ${isActive ? '' : 'min-h-[75px] lg:min-h-0 min-w-0 lg:min-w-[80px]'}`}
+               style={{
+                  flexGrow: isActive ? 6 : 1,
+                  flexBasis: 0,
+                  borderColor: isActive ? `color-mix(in srgb, ${prize.hue} 50%, transparent)` : `color-mix(in srgb, ${prize.hue} 15%, transparent)`,
+                  boxShadow: isActive ? `0 10px 40px -10px color-mix(in srgb, ${prize.hue} 40%, transparent)` : 'none'
+               }}
+             >
+                {/* Glow Overlay */}
+                <div 
+                  className="absolute inset-0 transition-opacity duration-700 pointer-events-none"
+                  style={{
+                     background: `linear-gradient(135deg, color-mix(in srgb, ${prize.hue} 30%, transparent), transparent 70%)`,
+                     opacity: isActive ? 1 : 0
+                  }}
+                />
+
+                {/* Giant Background Number */}
+                <div 
+                  className={`absolute -bottom-8 -right-4 lg:-bottom-12 lg:-right-8 text-[10rem] lg:text-[15rem] font-black italic leading-none transition-all duration-[1000ms] ease-out pointer-events-none ${isActive ? 'opacity-10 translate-x-0' : 'opacity-0 translate-x-12'}`}
+                  style={{ color: prize.hue }}
+                >
+                  {index + 1}
+                </div>
+                
+                {/* Active State Content */}
+                <div 
+                  className={`absolute inset-0 p-6 lg:p-10 flex flex-col justify-center w-full lg:w-[600px] transition-all duration-[800ms] ease-out ${isActive ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 translate-y-8 pointer-events-none'}`}
+                >
+                   <div className="flex items-center gap-3 mb-4">
+                     <span className="px-4 py-1.5 text-[9px] font-bold tracking-[0.3em] uppercase border rounded-full shadow-sm"
+                           style={{ borderColor: `color-mix(in srgb, ${prize.hue} 40%, transparent)`, color: prize.hue, backgroundColor: `color-mix(in srgb, ${prize.hue} 10%, transparent)` }}>
+                       {prize.place}
+                     </span>
+                     <span className="text-[10px] font-black tracking-[0.4em] uppercase text-white/50 hidden sm:block">
+                       {prize.alien}
+                     </span>
+                   </div>
+
+                   <h3 className="font-black text-white text-3xl md:text-5xl lg:text-6xl uppercase italic tracking-tighter mb-4 drop-shadow-2xl">
+                     {prize.title}
+                   </h3>
+                   
+                   <p className="text-white/70 text-xs lg:text-sm max-w-[280px] sm:max-w-sm mb-6 leading-relaxed line-clamp-2 lg:line-clamp-none">
+                     {prize.text}
+                   </p>
+                   
+                   <div className="mt-4 pt-6 border-t border-white/10 flex items-center gap-6">
+                      <span className="text-[9px] lg:text-[10px] font-bold tracking-[0.4em] text-white/30 uppercase">Reward</span>
+                      <span className="text-4xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text drop-shadow-2xl" 
+                            style={{ backgroundImage: `linear-gradient(to bottom, #ffffff, ${prize.hue})` }}>
+                        {prize.amount}
+                      </span>
+                   </div>
+                </div>
+
+                {/* Collapsed State Content */}
+                <div 
+                  className={`absolute inset-0 flex flex-row lg:flex-col items-center justify-center p-4 transition-all duration-500 ${isActive ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100 delay-200'}`}
+                >
+                   <span 
+                     className="text-[10px] font-bold tracking-[0.4em] uppercase whitespace-nowrap transform rotate-0 lg:-rotate-90 origin-center text-white/40 group-hover:text-white transition-colors"
+                   >
+                     {prize.place}
+                   </span>
+                </div>
+             </div>
+           )
+        })}
+      </Reveal>
     </section>
   );
 }

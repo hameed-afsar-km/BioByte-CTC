@@ -359,14 +359,11 @@ export const CORE_TEAM = CORE_TEAM_META.map((member, index) => {
 /* ---- Footer ---- */
 export const FOOTER_LINKS = [
   { id: "top", label: "Home" },
-  { id: "aliens", label: "Aliens" },
   { id: "about", label: "About" },
   { id: "problems", label: "Mission Files" },
-  { id: "register", label: "Registration" },
   { id: "timeline", label: "Rules & Timeline" },
   { id: "prizes", label: "Prize Vault" },
   { id: "faq", label: "FAQs" },
-  { id: "core-team", label: "Core Team" },
   { id: "contact", label: "Contact" },
 ];
 
@@ -374,8 +371,8 @@ export const FOOTER_LINKS = [
 export const NAV_ITEMS = [
   { id: "aliens", label: "Aliens" },
   { id: "about", label: "About" },
-  { id: "timeline", label: "How it works" },
   { id: "prizes", label: "Prizes" },
+  { id: "timeline", label: "How it works" },
 ];
 
 /* ---- Marquee copy ---- */
