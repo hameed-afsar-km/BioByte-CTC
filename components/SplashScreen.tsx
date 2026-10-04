@@ -39,6 +39,17 @@ export default function SplashScreen() {
   const bottomRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    // Check if we should skip the splash screen
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceSplash = urlParams.get("splash") === "1";
+    
+    if (!forceSplash && sessionStorage.getItem("biobyte_splash_seen")) {
+      setPhase("hidden");
+      return;
+    }
+    
+    sessionStorage.setItem("biobyte_splash_seen", "true");
+
     const top = topRef.current;
     const bottom = bottomRef.current;
     if (!top || !bottom) return;

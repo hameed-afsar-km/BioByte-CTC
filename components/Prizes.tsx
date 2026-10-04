@@ -64,14 +64,24 @@ function InteractivePrizeCard({ prize, index }: { prize: typeof PRIZES[0]; index
           </div>
           
           <h3 className="prize-amount text-4xl font-black text-white tracking-tight mb-4" style={{ textShadow: isHovered ? `0 0 20px color-mix(in srgb, ${prize.hue} 50%, transparent)` : "none", transition: "text-shadow 0.3s" }}>
-            {prize.amount}
+            <span className={`transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-0 absolute"}`}>
+              {prize.amount}
+            </span>
+            <span className={`transition-opacity duration-300 ${isHovered ? "opacity-0 absolute" : "opacity-100"}`}>
+              ₹ ?,???
+            </span>
           </h3>
           
           <div className="prize-divider h-px w-full mb-4" style={{ background: `linear-gradient(90deg, transparent, ${prize.hue}, transparent)`, opacity: isHovered ? 0.8 : 0.2, transition: "opacity 0.3s" }} />
           
-          <p className="prize-text text-gray-400 text-sm leading-relaxed max-w-[280px] mx-auto group-hover:text-gray-200 transition-colors duration-300">
+          <p className="prize-text text-gray-400 text-sm leading-relaxed max-w-[280px] mx-auto transition-all duration-300" style={{ opacity: isHovered ? 1 : 0, transform: isHovered ? 'translateY(0)' : 'translateY(10px)' }}>
             {prize.text}
           </p>
+          {!isHovered && (
+             <p className="absolute bottom-8 left-0 right-0 text-gray-600 text-xs font-bold tracking-widest uppercase animate-pulse">
+               Hover to Reveal
+             </p>
+          )}
         </div>
       </div>
     </Reveal>
@@ -91,6 +101,18 @@ export default function Prizes() {
           sub="Unlock the ultimate rewards. Complete your mission to secure these prizes."
           centered
         />
+
+        <div className="flex justify-center mt-6">
+          <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-gradient-to-r from-green-900/40 to-emerald-900/40 border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.15)] backdrop-blur-sm animate-pulse-slow">
+            <div className="flex flex-col text-right">
+              <span className="text-xs font-bold text-green-400 tracking-widest uppercase">Total Prize Pool</span>
+              <span className="text-3xl font-black text-white tracking-tight">₹ 5,000</span>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 border border-green-500/50 shadow-[inset_0_0_15px_rgba(34,197,94,0.4)]">
+              <span className="text-2xl font-bold font-serif">₹</span>
+            </div>
+          </div>
+        </div>
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {PRIZES.map((prize, index) => (

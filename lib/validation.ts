@@ -15,7 +15,7 @@ export const LIMITS = {
 
 export const ABSTRACT_MIN = 30;
 export const ABSTRACT_MAX = 1200;
-export const MAX_PPT_BYTES = 10 * 1024 * 1024;
+export const MAX_PPT_BYTES = 20 * 1024 * 1024;
 export const TEAM_MIN = 2;
 export const TEAM_MAX = 4;
 export const PPT_ACCEPT = ".ppt,.pptx,.pdf";
@@ -39,7 +39,7 @@ export function isValidPhone(value: string) {
 export function validatePptFile(file: File | null): string | null {
   if (!file) return "A presentation file is required.";
   if (!PPT_EXTENSIONS.test(file.name)) return "Must be a PPT, PPTX or PDF file.";
-  if (file.size > MAX_PPT_BYTES) return "File is too large (max 10MB).";
+  if (file.size > MAX_PPT_BYTES) return "File is too large (max 20MB).";
   return null;
 }
 
@@ -129,6 +129,10 @@ export function validateDraft(draft: RegistrationDraft): FieldErrors {
     errors.abstract = `Abstract must be at least ${ABSTRACT_MIN} characters.`;
   } else if (abstract.length > ABSTRACT_MAX) {
     errors.abstract = `Max ${ABSTRACT_MAX} characters.`;
+  }
+
+  if (!draft.assistanceRequirement) {
+    errors.assistanceRequirement = "Please select an assistance option.";
   }
 
   return errors;

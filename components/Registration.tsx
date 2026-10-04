@@ -12,6 +12,7 @@ import {
   ListChecks,
   LoaderCircle,
   Lock,
+  Download,
   Mail,
   Send,
   ShieldCheck,
@@ -38,6 +39,7 @@ import {
   fetchRegistrations,
   registrationIdFor,
   submitRegistration,
+  checkRegistrationExists,
 } from "@/lib/registrations";
 import {
   ABSTRACT_MAX,
@@ -79,6 +81,7 @@ const emptyForm = () => ({
   problemId: "",
   abstract: "",
   ppt: null as File | null,
+  assistanceRequirement: "",
 });
 
 /** Rejects with a clear message if a promise never settles. */
@@ -172,13 +175,25 @@ export default function Registration() {
   useEffect(() => {
     if (!isFirebaseReady) return undefined;
 
-    return onAuthStateChanged(auth, (nextUser) => {
+    return onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
       const usable = Boolean(nextUser?.emailVerified) && isAllowedEmail(nextUser?.email);
       setReturning(usable);
-      if (usable) setStage(STAGE.FORM);
+      
+      if (usable && nextUser?.email) {
+        try {
+          const existing = await checkRegistrationExists(nextUser.email);
+          if (existing) {
+            router.push(`/confirmed?id=${encodeURIComponent(existing.id)}&pass=${encodeURIComponent(existing.passId)}`);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to check existing registration", e);
+        }
+        setStage(STAGE.FORM);
+      }
     });
-  }, []);
+  }, [router]);
 
   /* ---- Committing a track, shared by the gallery shortcut and the
          confirmation modal in the form ---- */
@@ -265,6 +280,15 @@ export default function Registration() {
       setReturning(false);
 
       if (result.user.emailVerified) {
+        try {
+          const existing = await checkRegistrationExists(result.user.email || "");
+          if (existing) {
+            router.push(`/confirmed?id=${encodeURIComponent(existing.id)}&pass=${encodeURIComponent(existing.passId)}`);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to check existing registration", e);
+        }
         setStage(STAGE.FORM);
       } else {
         setStage(STAGE.VERIFY);
@@ -862,6 +886,22 @@ export default function Registration() {
                     <Upload size={15} aria-hidden="true" />
                     Round 1 PPT
                   </span>
+                  <div className="bg-[#061a0b] border border-[#22542e] p-5 rounded-none mb-4 flex flex-col gap-3 relative overflow-hidden group">
+                    {/* Corner accent */}
+                    <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[#7cfc00] opacity-50" />
+                    
+                    <p className="text-[#cdeac7] text-sm font-semibold z-10">
+                      You MUST download and create your presentation using our official template. Any deviations from this template will result in <span className="text-[#ff4d3d] font-bold">automatic rejection</span>.
+                    </p>
+                    <a 
+                      href="/BIOBYTE_2K26_Template.pptx" 
+                      download 
+                      className="btn btn-primary inline-flex items-center justify-center gap-2 w-fit z-10"
+                    >
+                      <Download size={16} />
+                      Download BIOBYTE_2K26_Template.pptx
+                    </a>
+                  </div>
                   <label className="upload-box">
                     <Upload size={19} aria-hidden="true" />
                     <span className="upload-text">
@@ -904,6 +944,28 @@ export default function Registration() {
                       {form.abstract.length}/{ABSTRACT_MAX}
                     </span>
                   </div>
+                </div>
+
+                <div className={`field field-wide ${fieldErrors.assistanceRequirement ? "has-error" : ""}`}>
+                  <label className="field-label">Assistance Required</label>
+                  <div className="flex flex-col gap-3 mt-2">
+                    {["Need Technical Assistance", "Need Non-Technical Assistance", "Need Both", "No Thanks! I am Good to Go!"].map((option) => (
+                      <label key={option} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-black/20 border border-white/10 hover:bg-black/40 transition-colors">
+                        <input
+                          type="radio"
+                          name="assistanceRequirement"
+                          value={option}
+                          checked={form.assistanceRequirement === option}
+                          onChange={(e) => update("assistanceRequirement")({ target: { value: e.target.value } } as any)}
+                          className="w-4 h-4 text-[#7cfc00] bg-black/50 border-white/20 focus:ring-[#7cfc00] focus:ring-2"
+                        />
+                        <span className="text-sm text-white/80">{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {fieldErrors.assistanceRequirement && (
+                    <p className="field-error mt-2">{fieldErrors.assistanceRequirement}</p>
+                  )}
                 </div>
               </div>
 

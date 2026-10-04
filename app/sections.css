@@ -486,7 +486,8 @@
     display: flex;
   }
 
-  .navbar-actions {
+  .navbar-actions,
+  .nav-links + .navbar-actions {
     margin-left: auto;
   }
 }

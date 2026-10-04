@@ -3,6 +3,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
@@ -184,6 +185,7 @@ export async function submitRegistration(input: {
         pptUrl,
         pptPath,
         pptName: draft.ppt?.name ?? null,
+        assistanceRequirement: draft.assistanceRequirement,
         round: "round-1",
         status: "registered",
         createdAt: serverTimestamp(),
@@ -246,6 +248,36 @@ export async function updateRegistrationStatus(
   });
 }
 
+
+export async function updateRegistrationDetails(
+  id: string,
+  teamName: string,
+  adminEmail: string,
+  updates: Partial<RegistrationRecord>,
+  changesText: string
+) {
+  await setDoc(doc(db, REGISTRATIONS_COLLECTION, id), { 
+    ...updates,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  const logRef = doc(collection(db, "audit_logs"));
+  await setDoc(logRef, {
+    action: "EDITED",
+    teamName,
+    reason: `Edited team details. Changes: ${changesText}`,
+    adminEmail,
+    timestamp: serverTimestamp()
+  });
+}
+
+export async function clearAuditLogs() {
+  const { deleteDoc } = await import("firebase/firestore");
+  const snapshot = await getDocs(collection(db, "audit_logs"));
+  const promises = snapshot.docs.map(docSnap => deleteDoc(doc(db, "audit_logs", docSnap.id)));
+  await Promise.all(promises);
+}
+
 /**
  * Organiser-only: removes a registration entirely.
  *
@@ -253,7 +285,7 @@ export async function updateRegistrationStatus(
  * read-then-delete. The transaction is kept only so the row cannot change
  * between the read that finds the PPT path and the delete that drops the row.
  */
-export async function deleteRegistration(id: string) {
+export async function deleteRegistration(id: string, adminEmail: string, teamDetails: string, teamName: string) {
   const pptPath = await runTransaction(db, async (transaction) => {
     const registrationRef = doc(db, REGISTRATIONS_COLLECTION, id);
     const snapshot = await transaction.get(registrationRef);
@@ -263,6 +295,15 @@ export async function deleteRegistration(id: string) {
     const record = snapshot.data() as RegistrationRecord;
 
     transaction.delete(registrationRef);
+    
+    const logRef = doc(collection(db, "audit_logs"));
+    transaction.set(logRef, {
+      action: "DELETED",
+      teamName,
+      reason: `Deleted team. Details: ${teamDetails}`,
+      adminEmail,
+      timestamp: serverTimestamp()
+    });
 
     return record.pptPath ?? null;
   });
@@ -272,4 +313,16 @@ export async function deleteRegistration(id: string) {
   if (pptPath) {
     await supabase.storage.from('submissions').remove([pptPath]).catch(() => undefined);
   }
+}
+
+export async function checkRegistrationExists(email: string): Promise<{ id: string; passId: string } | null> {
+  const id = registrationIdFor(email);
+  const registrationRef = doc(db, REGISTRATIONS_COLLECTION, id);
+  const snap = await getDoc(registrationRef);
+  
+  if (snap.exists()) {
+    const data = snap.data();
+    return { id, passId: data.passId };
+  }
+  return null;
 }

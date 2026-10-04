@@ -26,6 +26,7 @@ export type RegistrationDraft = {
   problemId: string;
   abstract: string;
   ppt: File | null;
+  assistanceRequirement: string;
 };
 
 /** The shape stored at `registrations/{id}`. */
@@ -46,6 +47,7 @@ export type RegistrationRecord = {
   pptUrl: string | null;
   pptPath: string | null;
   pptName: string | null;
+  assistanceRequirement: string;
   round: string;
   status: "registered" | "shortlisted" | "rejected";
   statusReason?: string;

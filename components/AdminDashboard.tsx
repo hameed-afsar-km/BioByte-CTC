@@ -28,7 +28,9 @@ import {
   deleteRegistration,
   fetchRegistrations,
   fetchAuditLogs,
-  updateRegistrationStatus
+  updateRegistrationStatus,
+  updateRegistrationDetails,
+  clearAuditLogs
 } from "@/lib/registrations";
 import type { RegistrationRecord, AuditLog } from "@/lib/types";
 import OmnitrixMark from "./OmnitrixMark";
@@ -72,11 +74,14 @@ export default function AdminDashboard() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [trackFilter, setTrackFilter] = useState("");
+  const [assistanceFilter, setAssistanceFilter] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "shortlisted" | "audit">("all");
   const [selectedTeam, setSelectedTeam] = useState<RegistrationRecord | null>(null);
+  const [isEditingTeam, setIsEditingTeam] = useState(false);
+  const [editTeamData, setEditTeamData] = useState("");
   /* Bumping this re-runs the load effect — the manual refresh button. */
   const [refreshKey, setRefreshKey] = useState(0);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
@@ -109,6 +114,28 @@ export default function AdminDashboard() {
     } : current);
     
     updateRegistrationStatus(record.id, record.teamName, user!.email!, nextStatus, cleanReason).catch(() => refresh());
+  };
+
+  const handleEditSave = async () => {
+    if (!selectedTeam) return;
+    try {
+      const parsed = JSON.parse(editTeamData) as RegistrationRecord;
+      const changesText = `Updated details via JSON editor.`;
+      
+      const { id, createdAt, updatedAt, ...updates } = parsed as any;
+      await updateRegistrationDetails(
+        selectedTeam.id,
+        parsed.teamName,
+        user?.email || "Unknown Admin",
+        updates,
+        changesText
+      );
+      setIsEditingTeam(false);
+      refresh();
+      setSelectedTeam(parsed);
+    } catch (e) {
+      alert("Invalid JSON format. Please check for syntax errors.");
+    }
   };
   useEffect(() => {
     if (!isFirebaseReady) return undefined;
@@ -170,6 +197,7 @@ export default function AdminDashboard() {
     const rows = records.filter((record) => {
       if (activeTab === "shortlisted" && record.status !== "shortlisted") return false;
       if (trackFilter && record.problemId !== trackFilter) return false;
+      if (assistanceFilter && record.assistanceRequirement !== assistanceFilter) return false;
       if (!needle) return true;
 
       return (
@@ -187,7 +215,7 @@ export default function AdminDashboard() {
       if (sort === "track") return a.problemId.localeCompare(b.problemId);
       return (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0);
     });
-  }, [records, search, trackFilter, sort, activeTab]);
+  }, [records, search, trackFilter, assistanceFilter, sort, activeTab]);
 
   const totals = useMemo(() => {
     const capacity = PROBLEMS.length * 9999;
@@ -212,6 +240,7 @@ export default function AdminDashboard() {
       "Track",
       "Alien",
       "Mission",
+      "Assistance Required",
       "Abstract",
       "PPT URL",
       "Round",
@@ -229,6 +258,7 @@ export default function AdminDashboard() {
       record.emailId,
       `${record.problemId} â€” ${record.alien}`,
       record.problemTitle,
+      record.assistanceRequirement || "",
       record.abstract,
       record.pptUrl ?? "",
       record.round,
@@ -441,6 +471,20 @@ export default function AdminDashboard() {
             <p className="text-xs text-gray-500 font-medium mt-1 uppercase tracking-wider">Registration Dashboard</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
+            {activeTab === "audit" && (
+              <button 
+                onClick={async () => {
+                  if (window.confirm("Are you sure you want to clear ALL audit logs? This cannot be undone.")) {
+                    await clearAuditLogs();
+                    refresh(true);
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-sm font-semibold text-red-400 transition-all shadow-sm shrink-0"
+              >
+                <Trash2 size={16} /> 
+                <span className="hidden sm:inline">Clear Logs</span>
+              </button>
+            )}
             <button 
               onClick={() => refresh(true)} 
               disabled={loading}
@@ -566,6 +610,18 @@ export default function AdminDashboard() {
                   {PROBLEMS.map((problem) => (
                     <option key={problem.id} value={problem.id}>{problem.id} - {problem.alien}</option>
                   ))}
+                </select>
+
+                <select 
+                  className="px-4 py-3 text-sm font-medium bg-[#0a0a0a] border border-gray-800 rounded-xl text-gray-300 outline-none focus:border-green-500/50 cursor-pointer appearance-none min-w-[140px]" 
+                  value={assistanceFilter} 
+                  onChange={(event) => setAssistanceFilter(event.target.value)}
+                >
+                  <option value="">All Assistance</option>
+                  <option value="Need Technical Assistance">Technical</option>
+                  <option value="Need Non-Technical Assistance">Non-Technical</option>
+                  <option value="Need Both">Both</option>
+                  <option value="No Thanks! I am Good to Go!">None</option>
                 </select>
                 
                 <select 
@@ -708,7 +764,7 @@ export default function AdminDashboard() {
                                 title="Delete Registration"
                                 onClick={() => {
                                   if (!window.confirm(`Are you absolutely sure you want to delete the registration for ${record.teamName}?\nThis action is permanent and cannot be undone.`)) return;
-                                   deleteRegistration(record.id).then(() => refresh());
+                                   deleteRegistration(record.id, user?.email || "Unknown Admin", JSON.stringify(record), record.teamName).then(() => refresh());
                                  }}
                                >
                                 <Trash2 size={18} />
@@ -815,6 +871,13 @@ export default function AdminDashboard() {
           <ShieldAlert size={20} />
           <span className="text-[10px] font-medium uppercase tracking-wider mt-1">Audit</span>
         </button>
+        <Link 
+          href="/" 
+          className="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-500 hover:text-gray-300"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-1">Site</span>
+        </Link>
         <button 
           onClick={() => signOut(auth)} 
           className="flex flex-col items-center justify-center w-full h-full space-y-1 text-red-500/70 hover:text-red-400"
@@ -835,18 +898,50 @@ export default function AdminDashboard() {
                 </div>
                 Team Submission
               </h2>
-              <button onClick={() => setSelectedTeam(null)} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
-                <X size={20} />
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    if (!isEditingTeam) {
+                      setEditTeamData(JSON.stringify(selectedTeam, null, 2));
+                    }
+                    setIsEditingTeam(!isEditingTeam);
+                  }}
+                  className="px-3 py-1.5 text-sm font-medium text-blue-400 bg-blue-500/10 rounded-lg hover:bg-blue-500/20 transition-colors"
+                >
+                  {isEditingTeam ? "Cancel Edit" : "Edit JSON"}
+                </button>
+                <button onClick={() => setSelectedTeam(null)} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
-            <div className="p-8 space-y-8">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Team Details</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
-                    <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Team Name</p>
-                    <p className="font-bold text-gray-200 text-lg">{selectedTeam.teamName}</p>
-                  </div>
+
+            {isEditingTeam ? (
+              <div className="p-8">
+                <p className="text-gray-400 mb-4 text-sm">Edit the JSON object below to update team details. Be careful to preserve valid JSON syntax.</p>
+                <textarea 
+                  className="w-full h-96 bg-[#0a0a0a] border border-gray-700 rounded-xl p-4 text-green-400 font-mono text-sm outline-none focus:border-green-500"
+                  value={editTeamData}
+                  onChange={(e) => setEditTeamData(e.target.value)}
+                />
+                <div className="mt-4 flex justify-end">
+                  <button 
+                    onClick={handleEditSave}
+                    className="px-6 py-2 bg-green-600 text-white font-bold rounded-xl hover:bg-green-500 transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 space-y-8">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Team Details</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
+                      <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Team Name</p>
+                      <p className="font-bold text-gray-200 text-lg">{selectedTeam.teamName}</p>
+                    </div>
                   <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
                     <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">College</p>
                     <p className="font-bold text-gray-200 text-lg">{selectedTeam.collegeName}</p>
@@ -858,6 +953,10 @@ export default function AdminDashboard() {
                   <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
                     <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Contact Email</p>
                     <a href={`mailto:${selectedTeam.emailId}`} className="font-bold text-blue-400 hover:underline text-lg truncate block">{selectedTeam.emailId}</a>
+                  </div>
+                  <div className="bg-[#0a0a0a] p-5 rounded-xl border border-gray-800">
+                    <p className="text-xs text-gray-500 font-medium mb-1 uppercase tracking-wider">Assistance Required</p>
+                    <p className="font-bold text-gray-200 text-lg">{selectedTeam.assistanceRequirement || "None Specified"}</p>
                   </div>
                 </div>
                 {selectedTeam.statusReason && (
@@ -946,6 +1045,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
+            )}
           </div>
         </div>
       )}
