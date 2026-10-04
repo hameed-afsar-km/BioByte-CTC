@@ -44,8 +44,9 @@ export default function SplashScreen() {
     const forceSplash = urlParams.get("splash") === "1";
     
     if (!forceSplash && sessionStorage.getItem("biobyte_splash_seen")) {
-      setPhase("hidden");
-      return;
+      // Temporarily bypass this check so the splash screen shows up on every reload.
+      // setPhase("hidden");
+      // return;
     }
     
     sessionStorage.setItem("biobyte_splash_seen", "true");
@@ -166,8 +167,6 @@ export default function SplashScreen() {
         <SplashSources />
       </video>
 
-      {/* Lit seam that flares along the cut while the halves separate */}
-      <div className="splash-seam" aria-hidden="true" />
 
       {/* Scan-line overlay keeps the Omnitrix HUD feel over the video */}
       <div className="splash-scan" aria-hidden="true" />

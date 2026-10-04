@@ -6,7 +6,7 @@
  */
 
 /* ---- Splash timing — must be at least as long as the video. ---- */
-export const SPLASH_MS = 3000;
+export const SPLASH_MS = 4000;
 export const SPLASH_EXIT_MS = 700;
 
 /* ---- Event identity ---- */
