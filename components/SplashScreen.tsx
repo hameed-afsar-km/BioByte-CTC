@@ -60,16 +60,14 @@ export default function SplashScreen() {
     let fallbackTimer = 0;
     let started = false;
 
-    const begin = async () => {
+    const begin = () => {
       if (started || cancelled) return;
       started = true;
       top.currentTime = 0;
       bottom.currentTime = 0;
-      try {
-        await Promise.all([top.play(), bottom.play()]);
-      } catch {
+      Promise.all([top.play(), bottom.play()]).catch(() => {
         // A static first frame is still preferable to a permanently black screen.
-      }
+      });
       if (cancelled) return;
       setPhase("active");
       exitTimer = window.setTimeout(() => {
