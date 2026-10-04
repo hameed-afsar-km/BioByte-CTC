@@ -353,7 +353,7 @@ export default function Registration() {
   };
 
   /* ---- Form plumbing ---- */
-  const update = <K extends "teamName" | "collegeName" | "abstract">(field: K) =>
+  const update = <K extends "teamName" | "collegeName" | "abstract" | "assistanceRequirement">(field: K) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((current) => ({ ...current, [field]: event.target.value }));
       setFieldErrors((current) => ({ ...current, [field]: undefined }));
