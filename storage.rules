@@ -34,9 +34,19 @@ service firebase.storage {
       );
     }
 
+    /* MUST match CANONICAL_ADMIN_EMAILS in lib/access.ts and isAdmin()
+       in firestore.rules. */
     function isAdmin() {
       return signedIn() && (
         authEmail() in [
+          '250151601005@crescent.education',
+          '240151601011@crescent.education',
+          '250151601072@crescent.education',
+          '240071601264@crescent.education',
+          '240071601263@crescent.education',
+          '250071601227@crescent.education',
+          '260071601257@crescent.education',
+          '240071601217@crescent.education',
           'merfinhanson@gmail.com',
           'hameedafsar@gmail.com',
           'meharbasha@gmail.com'

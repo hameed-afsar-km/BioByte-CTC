@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -50,6 +51,12 @@ import {
   validateDraft,
 } from "@/lib/validation";
 import { consumePendingTrack, SELECT_TRACK_EVENT } from "@/lib/registerGate";
+import {
+  DEFAULT_SETTINGS,
+  fetchSiteSettings,
+  registrationGate,
+  type SiteSettings,
+} from "@/lib/settings";
 import type { FieldErrors, Member } from "@/lib/types";
 import Reveal from "./Reveal";
 import SectionHead from "./SectionHead";
@@ -121,6 +128,12 @@ export default function Registration() {
   const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  /* Live registration settings — the admin dashboard owns the deadline and
+     the open/closed switch, so the form re-checks them instead of trusting
+     the build-time defaults. */
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
   const isRestoringRef = useRef(false);
   const hasInitializedRef = useRef(false);
 
@@ -163,6 +176,23 @@ export default function Registration() {
     }
   }, [form]);
 
+  /* ---- Keep the open/closed gate live: reload settings and re-tick so the
+         form flips to "closed" the moment the deadline passes. ---- */
+  useEffect(() => {
+    let alive = true;
+
+    fetchSiteSettings().then((next) => {
+      if (alive) setSiteSettings(next);
+    });
+
+    const id = window.setInterval(() => setNow(Date.now()), 10_000);
+
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, []);
+
   /* Track picked in the dropdown but not yet confirmed. The select stays on
      the old value until the confirmation modal is accepted. */
   const [pendingTrackId, setPendingTrackId] = useState<string | null>(null);
@@ -170,6 +200,10 @@ export default function Registration() {
   const pollRef = useRef<number | null>(null);
 
   const email = user?.email ?? "";
+
+  /* Open/closed decision for this form — shared by the render below and the
+     submit guard, so the two can never disagree. */
+  const gate = registrationGate(siteSettings ?? DEFAULT_SETTINGS, now);
 
   /* ---- Restore an existing verified session without prompting ---- */
   useEffect(() => {
@@ -394,6 +428,16 @@ export default function Registration() {
     event.preventDefault();
     if (submitting) return;
 
+    /* Re-read the settings instead of trusting the cached gate: the deadline
+       may have just passed while the form was being filled. */
+    const liveSettings = await fetchSiteSettings();
+    setSiteSettings(liveSettings);
+    const liveGate = registrationGate(liveSettings);
+    if (!liveGate.open) {
+      setError(liveGate.reason);
+      return;
+    }
+
     const draft = { ...form, emailId: email };
     const errors = validateDraft(draft);
     setFieldErrors(errors);
@@ -509,8 +553,46 @@ export default function Registration() {
             </p>
           ) : null}
 
+          {/* ============ REGISTRATION CLOSED — DEADLINE OR ADMIN SWITCH ============ */}
+          {!gate.open && isFirebaseReady && (
+            <div className="pane">
+              <div className="pane-head">
+                <span className="pane-icon" aria-hidden="true">
+                  <Lock size={19} />
+                </span>
+                <h3 className="pane-title">Registration Closed</h3>
+              </div>
+
+              <p className="alert alert-error" role="alert">
+                <TriangleAlert size={17} aria-hidden="true" />
+                <span>{gate.reason}</span>
+              </p>
+
+              <p className="pane-text">
+                New registrations are no longer being accepted
+                {siteSettings?.deadline
+                  ? ` — the deadline was ${new Date(siteSettings.deadline).toLocaleString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`
+                  : ""}
+                . Event day — {EVENT.time}. For queries, reach the core team from the Contact
+                section on the home page.
+              </p>
+
+              <div className="pane-actions">
+                <Link className="btn btn-secondary btn-block" href="/">
+                  Back to Site
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* ============ STAGE 1 — GOOGLE GATE ============ */}
-          {stage === STAGE.AUTH && isFirebaseReady && (
+          {gate.open && stage === STAGE.AUTH && isFirebaseReady && (
             <div className="pane">
               <div className="pane-head">
                 <span className="pane-icon" aria-hidden="true">
@@ -558,7 +640,7 @@ export default function Registration() {
           )}
 
           {/* ============ STAGE 2 — EMAIL VERIFICATION ============ */}
-          {stage === STAGE.VERIFY && (
+          {gate.open && stage === STAGE.VERIFY && (
             <div className="pane">
               <div className="pane-head">
                 <span className="pane-icon" aria-hidden="true">
@@ -601,7 +683,7 @@ export default function Registration() {
           )}
 
           {/* ============ STAGE 3 — REGISTRATION FORM ============ */}
-          {stage === STAGE.FORM && (
+          {gate.open && stage === STAGE.FORM && (
             <form className="pane relative" onSubmit={handleSubmit} noValidate>
               {restoringCache && (
                 <div className="absolute inset-0 z-10 bg-[#0a0a0a]/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl border border-green-500/30 min-h-[400px]">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   BadgeCheck,
+  CalendarClock,
   Download,
   Gauge,
   LoaderCircle,
@@ -13,6 +14,7 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
+  SlidersHorizontal,
   Trash2,
   TriangleAlert,
   Users,
@@ -32,6 +34,12 @@ import {
   updateRegistrationDetails,
   clearAuditLogs
 } from "@/lib/registrations";
+import {
+  fetchSiteSettings,
+  registrationGate,
+  saveSiteSettings,
+  type SiteSettings,
+} from "@/lib/settings";
 import type { RegistrationRecord, AuditLog } from "@/lib/types";
 import OmnitrixMark from "./OmnitrixMark";
 
@@ -54,13 +62,49 @@ function csvCell(value: unknown) {
 const NO_RECORDS: RegistrationRecord[] = [];
 const NO_AUDIT_LOGS: AuditLog[] = [];
 
-/** One round trip for everything the dashboard shows. No state, no side effects. */
+const pad2 = (value: number) => String(value).padStart(2, "0");
+
+/** ISO string -> value for a `<input type="datetime-local">`, in local time. */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(
+    date.getHours(),
+  )}:${pad2(date.getMinutes())}`;
+}
+
+function formatDeadline(iso: string | null): string {
+  if (!iso) return "No deadline set";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "No deadline set";
+  return date.toLocaleString("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** One round trip for everything the dashboard shows. No state, no side effects.
+    Registrations are essential — if that read fails the whole load fails. Audit
+    logs are secondary: a failure there degrades to a warning instead of hiding
+    the registrations table behind it. */
 async function readDashboard() {
-  const [records, auditLogs] = await Promise.all([
+  const [records, audit] = await Promise.allSettled([
     fetchRegistrations(),
     fetchAuditLogs()
   ]);
-  return { records, auditLogs };
+  if (records.status === "rejected") throw records.reason;
+  return {
+    records: records.value,
+    auditLogs: audit.status === "fulfilled" ? audit.value : [],
+    auditError: audit.status === "rejected"
+      ? `Audit log access failed: ${(audit.reason as Error)?.message || "permission denied"}`
+      : null
+  };
 }
 
 export default function AdminDashboard() {
@@ -72,16 +116,26 @@ export default function AdminDashboard() {
     key: number;
   } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /* Firebase error code behind `loadError`, so a rules rejection can be
+     explained instead of looking like an empty database. */
+  const [loadErrorCode, setLoadErrorCode] = useState<string | null>(null);
+  const [auditWarning, setAuditWarning] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [trackFilter, setTrackFilter] = useState("");
   const [assistanceFilter, setAssistanceFilter] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"all" | "shortlisted" | "audit">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "shortlisted" | "audit" | "settings">("all");
   const [selectedTeam, setSelectedTeam] = useState<RegistrationRecord | null>(null);
   const [isEditingTeam, setIsEditingTeam] = useState(false);
   const [editTeamData, setEditTeamData] = useState("");
+  /* Registration settings (deadline + open/closed switch). */
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  const [settingsVersion, setSettingsVersion] = useState(0);
+  const [deadlineDraft, setDeadlineDraft] = useState("");
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [settingsNotice, setSettingsNotice] = useState<string | null>(null);
   /* Bumping this re-runs the load effect — the manual refresh button. */
   const [refreshKey, setRefreshKey] = useState(0);
   const [isManualRefresh, setIsManualRefresh] = useState(false);
@@ -144,6 +198,71 @@ export default function AdminDashboard() {
     });
   }, []);
 
+  /* ---- Registration settings: loaded once per save, never by the 5s
+         auto-refresh, so an unsaved deadline edit is not clobbered. ---- */
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    let cancelled = false;
+
+    fetchSiteSettings().then((next) => {
+      if (cancelled) return;
+      setSiteSettings(next);
+      setDeadlineDraft(toLocalInput(next.deadline));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, settingsVersion]);
+
+  const applySettings = async (next: SiteSettings, reason: string) => {
+    setSettingsBusy(true);
+    setSettingsNotice(null);
+    try {
+      await saveSiteSettings(next, user?.email ?? "Unknown Admin", reason);
+      setSiteSettings(next);
+      setDeadlineDraft(toLocalInput(next.deadline));
+      setSettingsNotice("Settings saved — the site picks this up immediately.");
+      window.setTimeout(() => setSettingsNotice(null), 5000);
+      refresh(true);
+    } catch (err) {
+      window.alert((err as Error)?.message || "Could not save settings. Check Firestore security rules.");
+    } finally {
+      setSettingsBusy(false);
+    }
+  };
+
+  const handleToggleRegistrations = (open: boolean) => {
+    if (!siteSettings || settingsBusy) return;
+    const confirmed = window.confirm(
+      open
+        ? "Open registrations? Anyone with a Crescent account will be able to register again."
+        : "Close registrations? Every new registration attempt will be blocked immediately.",
+    );
+    if (!confirmed) return;
+    void applySettings(
+      { ...siteSettings, registrationsOpen: open },
+      open ? "Opened registrations." : "Closed registrations.",
+    );
+  };
+
+  const handleSaveDeadline = () => {
+    if (!siteSettings || settingsBusy) return;
+    const parsed = new Date(deadlineDraft);
+    if (!deadlineDraft || Number.isNaN(parsed.getTime())) {
+      window.alert("Pick a valid date and time for the deadline.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Set the registration deadline to ${formatDeadline(parsed.toISOString())}?`,
+    );
+    if (!confirmed) return;
+    void applySettings(
+      { ...siteSettings, deadline: parsed.toISOString() },
+      `Set registration deadline to ${formatDeadline(parsed.toISOString())}.`,
+    );
+  };
+
   useEffect(() => {
     if (!isAdmin) return undefined;
 
@@ -152,13 +271,16 @@ export default function AdminDashboard() {
     readDashboard()
       .then((next) => {
         if (cancelled) return;
-        setData({ ...next, key: refreshKey });
+        setData({ records: next.records, auditLogs: next.auditLogs, key: refreshKey });
         setLoadError(null);
+        setLoadErrorCode(null);
+        setAuditWarning(next.auditError);
         setIsManualRefresh(false);
       })
-      .catch((err: Error) => {
+      .catch((err: Error & { code?: string }) => {
         if (cancelled) return;
         setLoadError(err?.message || "Could not read registrations. Check Firestore security rules.");
+        setLoadErrorCode(err?.code ?? null);
         setIsManualRefresh(false);
       });
 
@@ -226,6 +348,9 @@ export default function AdminDashboard() {
       shortlisted: records.filter((record) => record.status === "shortlisted").length
     };
   }, [records]);
+
+  /* What the public sees right now: open, deadline passed, or switched off. */
+  const settingsGate = siteSettings ? registrationGate(siteSettings) : null;
 
   const exportCsv = () => {
     const header = [
@@ -439,6 +564,12 @@ export default function AdminDashboard() {
           >
             <ShieldAlert size={18} /> Audit Logs
           </button>
+          <button 
+            onClick={() => setActiveTab("settings")}
+            className={`w-full px-4 py-3 rounded-xl flex items-center gap-3 font-medium transition-all ${activeTab === "settings" ? "bg-gray-800/40 text-green-400 border border-gray-700/50" : "text-gray-400 hover:text-white hover:bg-gray-800/20 border border-transparent"}`}
+          >
+            <SlidersHorizontal size={18} /> Registration Settings
+          </button>
           <div className="my-4 border-b border-gray-800/50"></div>
           <Link href="/" className="px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800/40 rounded-xl flex items-center gap-3 font-medium transition-all">
             <ArrowLeft size={18} /> Back to Site
@@ -467,8 +598,18 @@ export default function AdminDashboard() {
         {/* Topbar */}
         <header className="h-20 border-b border-gray-800 flex items-center justify-between px-8 bg-[#0a0a0a]/80 backdrop-blur-xl z-10 shrink-0">
           <div>
-            <h1 className="text-xl font-bold text-gray-100">Overview</h1>
-            <p className="text-xs text-gray-500 font-medium mt-1 uppercase tracking-wider">Registration Dashboard</p>
+            <h1 className="text-xl font-bold text-gray-100">
+              {activeTab === "settings"
+                ? "Registration Settings"
+                : activeTab === "audit"
+                  ? "Audit Logs"
+                  : activeTab === "shortlisted"
+                    ? "Shortlisted Teams"
+                    : "Overview"}
+            </h1>
+            <p className="text-xs text-gray-500 font-medium mt-1 uppercase tracking-wider">
+              {activeTab === "settings" ? "Deadline & registration switch" : "Registration Dashboard"}
+            </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
             {activeTab === "audit" && (
@@ -494,33 +635,37 @@ export default function AdminDashboard() {
               <RefreshCw size={16} className={loading ? "animate-spin text-green-500" : ""} /> 
               <span className="hidden md:inline">Refresh</span>
             </button>
-            <button 
-              onClick={exportCsv} 
-              disabled={!filtered.length}
-              className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm disabled:opacity-50 shrink-0"
-              title="Export Teams"
-            >
-              <FileDown size={16} /> 
-              <span className="hidden md:inline">Teams</span>
-            </button>
-            <button 
-              onClick={exportMembersCsv} 
-              disabled={!filtered.length}
-              className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm disabled:opacity-50 shrink-0"
-              title="Export Members"
-            >
-              <UserCheck size={16} /> 
-              <span className="hidden md:inline">Members</span>
-            </button>
-            <button 
-              onClick={() => window.print()} 
-              disabled={!filtered.length}
-              className="flex items-center gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-green-500 hover:bg-green-400 rounded-xl text-sm font-bold text-black transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50 shrink-0"
-              title="Print"
-            >
-              <Printer size={16} /> 
-              <span className="hidden md:inline">Print / PDF</span>
-            </button>
+            {(activeTab === "all" || activeTab === "shortlisted") && (
+              <>
+                <button 
+                  onClick={exportCsv} 
+                  disabled={!filtered.length}
+                  className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm disabled:opacity-50 shrink-0"
+                  title="Export Teams"
+                >
+                  <FileDown size={16} /> 
+                  <span className="hidden md:inline">Teams</span>
+                </button>
+                <button 
+                  onClick={exportMembersCsv} 
+                  disabled={!filtered.length}
+                  className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#111111] hover:bg-gray-800 border border-gray-800 rounded-xl text-sm font-semibold text-gray-300 transition-all shadow-sm disabled:opacity-50 shrink-0"
+                  title="Export Members"
+                >
+                  <UserCheck size={16} /> 
+                  <span className="hidden md:inline">Members</span>
+                </button>
+                <button 
+                  onClick={() => window.print()} 
+                  disabled={!filtered.length}
+                  className="flex items-center gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-green-500 hover:bg-green-400 rounded-xl text-sm font-bold text-black transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50 shrink-0"
+                  title="Print"
+                >
+                  <Printer size={16} /> 
+                  <span className="hidden md:inline">Print / PDF</span>
+                </button>
+              </>
+            )}
           </div>
         </header>
 
@@ -529,6 +674,7 @@ export default function AdminDashboard() {
           <div className="max-w-[1600px] mx-auto">
             
             {/* Stat Cards */}
+            {(activeTab === "all" || activeTab === "shortlisted") && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-[#111111] border border-gray-800/60 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -584,8 +730,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Filter Bar */}
+            {(activeTab === "all" || activeTab === "shortlisted") && (
             <div className="bg-[#111111] border border-gray-800/80 rounded-2xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-8 shadow-lg">
               <div className="flex-1 flex items-center gap-3 px-4 py-2 bg-[#0a0a0a] rounded-xl border border-gray-800 focus-within:border-green-500/50 transition-colors">
                 <Search size={18} className="text-gray-500" />
@@ -635,16 +783,35 @@ export default function AdminDashboard() {
                 </select>
               </div>
             </div>
+            )}
 
             {loadError && (
               <div className="mb-8 p-5 bg-red-500/10 text-red-400 rounded-2xl border border-red-900/30 flex items-center gap-4 shadow-lg">
                 <TriangleAlert size={24} className="shrink-0" />
-                <p className="font-medium">{loadError}</p>
+                <p className="font-medium">
+                  {loadErrorCode === "permission-denied" ? (
+                    <>
+                      <span className="font-semibold">{user?.email ?? "This account"}</span> is not on the
+                      admin list in the Firestore security rules, so no data can be read. Add that address
+                      to <code className="font-mono">isAdmin()</code> in firestore.rules and storage.rules,
+                      run <code className="font-mono">npm run deploy</code>, then sign out and back in.
+                    </>
+                  ) : (
+                    loadError
+                  )}
+                </p>
+              </div>
+            )}
+
+            {auditWarning && activeTab === "audit" && (
+              <div className="mb-8 p-5 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-900/30 flex items-center gap-4 shadow-lg">
+                <TriangleAlert size={24} className="shrink-0" />
+                <p className="font-medium">{auditWarning}</p>
               </div>
             )}
 
             {/* Main Table */}
-            {activeTab !== "audit" && (
+            {(activeTab === "all" || activeTab === "shortlisted") && (
               <div className="bg-[#111111] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
               {loading && !records.length ? (
                 <div className="py-24 flex flex-col justify-center items-center gap-4 text-gray-500">
@@ -841,9 +1008,144 @@ export default function AdminDashboard() {
 
 
 
-            <div className="mt-12 text-center text-gray-600 text-xs tracking-widest font-bold pb-8">
-              END OF RECORDS
-            </div>
+            {/* ---------------- Registration Settings ---------------- */}
+            {activeTab === "settings" && (
+              <div className="max-w-3xl mx-auto space-y-6">
+                {settingsNotice && (
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl flex items-center gap-3 text-sm font-semibold">
+                    <BadgeCheck size={18} className="shrink-0" /> {settingsNotice}
+                  </div>
+                )}
+
+                {!siteSettings ? (
+                  <div className="bg-[#111111] border border-gray-800 rounded-2xl p-12 flex flex-col items-center gap-4 text-gray-500">
+                    <LoaderCircle size={28} className="animate-spin text-green-500" />
+                    <p className="font-medium">Loading registration settings…</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* ---- Turn registrations on / off ---- */}
+                    <div className="bg-[#111111] border border-gray-800/60 rounded-2xl p-6 shadow-xl">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            Registrations
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <h2 className="text-2xl font-bold text-white">
+                              {siteSettings.registrationsOpen ? "Open" : "Closed"}
+                            </h2>
+                            <span
+                              className={`inline-flex px-2.5 py-1 text-xs font-bold rounded-lg border ${
+                                settingsGate?.open
+                                  ? "bg-emerald-950 border-green-500/50 text-green-400"
+                                  : "bg-red-950 border-red-500/50 text-red-400"
+                              }`}
+                            >
+                              {settingsGate?.open ? "Accepting teams" : "Blocking sign-ups"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-400 mt-3 max-w-lg leading-relaxed">
+                            The master switch for the whole site. While closed, the home page and
+                            the registration form both show the closed notice, and every new
+                            registration is rejected — even before the deadline below.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1 p-1 bg-[#0a0a0a] border border-gray-800 rounded-xl shrink-0 self-start">
+                          <button
+                            type="button"
+                            disabled={settingsBusy || siteSettings.registrationsOpen}
+                            onClick={() => handleToggleRegistrations(true)}
+                            className={`px-5 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                              siteSettings.registrationsOpen
+                                ? "bg-green-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.25)]"
+                                : "text-gray-400 hover:text-white"
+                            } disabled:opacity-50`}
+                          >
+                            Open
+                          </button>
+                          <button
+                            type="button"
+                            disabled={settingsBusy || !siteSettings.registrationsOpen}
+                            onClick={() => handleToggleRegistrations(false)}
+                            className={`px-5 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                              !siteSettings.registrationsOpen
+                                ? "bg-red-500 text-black shadow-[0_0_20px_rgba(239,68,68,0.25)]"
+                                : "text-gray-400 hover:text-white"
+                            } disabled:opacity-50`}
+                          >
+                            Closed
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ---- Registration deadline ---- */}
+                    <div className="bg-[#111111] border border-gray-800/60 rounded-2xl p-6 shadow-xl">
+                      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        Registration Deadline
+                      </p>
+                      <p className="text-sm text-gray-400 mb-5 max-w-lg leading-relaxed">
+                        The hero countdown and the registration form follow this value live.
+                        Once it passes, sign-ups close automatically with a “Registration
+                        deadline is closed” notice.
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+                        <div className="flex-1 min-w-0">
+                          <label
+                            htmlFor="settings-deadline"
+                            className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"
+                          >
+                            Closes at
+                          </label>
+                          <input
+                            id="settings-deadline"
+                            type="datetime-local"
+                            className="w-full px-4 py-3 bg-[#0a0a0a] border border-gray-800 rounded-xl text-gray-200 font-medium outline-none focus:border-green-500/50 transition-colors"
+                            value={deadlineDraft}
+                            onChange={(event) => setDeadlineDraft(event.target.value)}
+                            disabled={settingsBusy}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSaveDeadline}
+                          disabled={settingsBusy || !deadlineDraft}
+                          className="px-6 py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+                        >
+                          {settingsBusy ? (
+                            <LoaderCircle size={16} className="animate-spin" />
+                          ) : (
+                            <CalendarClock size={16} />
+                          )}
+                          Save Deadline
+                        </button>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-gray-800/50 flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span className="text-gray-500 font-medium">Currently enforced</span>
+                        <span className="text-gray-200 font-bold">
+                          {formatDeadline(siteSettings.deadline)}
+                        </span>
+                      </div>
+                      {settingsGate && !settingsGate.open && (
+                        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold flex items-center gap-3">
+                          <TriangleAlert size={16} className="shrink-0" /> {settingsGate.reason}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {(activeTab === "all" || activeTab === "shortlisted") && (
+              <div className="mt-12 text-center text-gray-600 text-xs tracking-widest font-bold pb-8">
+                END OF RECORDS
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -870,6 +1172,13 @@ export default function AdminDashboard() {
         >
           <ShieldAlert size={20} />
           <span className="text-[10px] font-medium uppercase tracking-wider mt-1">Audit</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab("settings")} 
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${activeTab === 'settings' ? 'text-green-400' : 'text-gray-500 hover:text-gray-300'}`}
+        >
+          <SlidersHorizontal size={20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-1">Settings</span>
         </button>
         <Link 
           href="/" 

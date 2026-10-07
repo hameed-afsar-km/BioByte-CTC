@@ -1,6 +1,5 @@
 import { ArrowDown, Download, FileText, Zap } from "lucide-react";
-import { EVENT } from "@/data/site";
-import Countdown from "./Countdown";
+import DeadlineCountdown from "./DeadlineCountdown";
 
 export default function Hero() {
   return (
@@ -23,8 +22,7 @@ export default function Hero() {
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '3rem', gap: '0.5rem' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--color-omni)', textShadow: '0 0 15px rgba(124, 252, 0, 0.6)' }}>REGISTRATION DEADLINE</div>
-            <Countdown target={EVENT.deadline} />
+            <DeadlineCountdown />
           </div>
 
           <div className="hero-actions">

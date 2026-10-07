@@ -18,16 +18,21 @@ export const EVENT = {
   presenter: "Crescent Technocrats Club",
   blurb:
     "A multi-disciplinary project expo. Teams pick an alien track, build working tools for real problems, then demo them the same day.",
-  time: "09/10/26 Friday",
+  time: "14/10/26 Wednesday",
   teamSize: "2 to 4 members",
   /**
    * Event day. `null` = not announced yet; the countdown falls back to a
    * "to be announced" state instead of inventing a deadline.
-   * Friday 9 October 2026, 9:00 AM IST. The offset matters — without it the
+   * Wednesday 14 October 2026, 9:00 AM IST. The offset matters — without it the
    * countdown would resolve 9am in the viewer's own timezone.
    */
-  date: "2026-10-09T09:00:00+05:30" as string | null,
-  deadline: "2026-10-06T23:59:00+05:30",
+  date: "2026-10-14T09:00:00+05:30" as string | null,
+  /**
+   * Default registration deadline — Saturday 10 October 2026, 11:59 PM IST.
+   * The live value in Firestore (`settings/site`) overrides this once an
+   * admin changes it from the dashboard.
+   */
+  deadline: "2026-10-10T23:59:00+05:30",
   venue: "To be announced",
   roundOne: "Free registration + PPT submission",
   roundTwo: "₹50 per head if you make Round 2",
@@ -285,10 +290,10 @@ export const RULES = [
 /* ---- Transformation protocol (Timeline) ---- */
 export const PROTOCOL = [
   { step: "Mon, 5 Oct", title: "Registration Opens", text: "Problem statements are revealed and website registration begins." },
-  { step: "Tue, 6 Oct", title: "Registration & PPT Deadline", text: "Registration and PPT submission closes strictly at 11:59 PM." },
-  { step: "Wed, 7 Oct", title: "Shortlisting & Payment", text: "Shortlisted teams are announced and payment is collected from the selected teams." },
-  { step: "7 - 8 Oct", title: "Building the Prototype/MVP", text: "Teams begin building their working prototypes and MVPs for their selected track." },
-  { step: "Fri, 9 Oct", title: "Final Demo", text: "Final judging, prototype demonstrations, and afternoon awards ceremony." },
+  { step: "Sat, 10 Oct", title: "Registration & PPT Deadline", text: "Registration and PPT submission closes strictly at 11:59 PM." },
+  { step: "Sun, 11 Oct", title: "Shortlisting & Payment", text: "Shortlisted teams are announced and payment is collected from the selected teams." },
+  { step: "12 - 13 Oct", title: "Building the Prototype/MVP", text: "Teams begin building their working prototypes and MVPs for their selected track." },
+  { step: "Wed, 14 Oct", title: "Final Demo", text: "Final judging, prototype demonstrations, and afternoon awards ceremony." },
 ];
 
 /* ---- Frequently asked questions ---- */

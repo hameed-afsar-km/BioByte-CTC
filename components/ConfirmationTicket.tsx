@@ -255,7 +255,7 @@ export default function ConfirmationTicket() {
                   <span className="mt-0.5 w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold"
                     style={{ background: "rgba(124,252,0,0.12)", color: "#7cfc00", border: "1px solid rgba(124,252,0,0.25)" }}>2</span>
                   <p className="text-white/70 text-sm leading-relaxed">
-                    <span className="text-white font-medium">Shortlisting update on 07 Oct 2026.</span> We'll notify shortlisted teams via WhatsApp.
+                    <span className="text-white font-medium">Shortlisting update on 11 Oct 2026.</span> We'll notify shortlisted teams via WhatsApp.
                   </p>
                 </div>
               </div>

@@ -105,9 +105,7 @@ Contestants must have a verified email on:
 - `*@crescent.education`
 - `*@crescenttechnocrats.club`
 
-### Two known gaps
-
-Both are pre-existing and worth fixing before launch:
+### Known gap
 
 1. **Client gate is stricter than the rules.**
    [`lib/access.ts`](lib/access.ts) only accepts the exact domain
@@ -116,14 +114,16 @@ Both are pre-existing and worth fixing before launch:
    permitted by the rules but blocked by the UI. Align the two — most likely
    by widening `ALLOWED_DOMAIN` handling to a domain list.
 
-2. **Admin identity has two sources.**
-   `access.ts` reads admins from `NEXT_PUBLIC_ADMIN_EMAILS`, while the rules
-   hard-code three `@gmail.com` addresses. Adding an admin via the env var
-   grants UI access that the rules will then reject, so status changes and
-   deletions fail with a permission error. Pick one source of truth.
+### Admin identity
 
-Admin addresses currently in the rules: `merfinhanson@gmail.com`,
-`hameedafsar@gmail.com`, `meharbasha@gmail.com`.
+Admin access has one client-side source of truth — `CANONICAL_ADMIN_EMAILS`
+in [`lib/access.ts`](lib/access.ts) — merged with any extras in
+`NEXT_PUBLIC_ADMIN_EMAILS`. The same eleven addresses are hard-coded in
+`isAdmin()` in both [`firestore.rules`](firestore.rules) and
+[`storage.rules`](storage.rules); the three lists must be edited together.
+An address in the UI list but not the rules loads the dashboard and then
+fails with a permission error (the dashboard explains this and names the
+account). Deploy rules with `npm run deploy` after editing them.
 
 ### Publishing the client config
 

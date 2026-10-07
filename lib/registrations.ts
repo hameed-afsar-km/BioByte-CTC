@@ -15,6 +15,7 @@ import {
 import { PROBLEMS } from "@/data/site";
 import { db, storage } from "./firebase";
 import { supabase } from "./supabase";
+import { fetchSiteSettings, registrationGate } from "./settings";
 import { cleanMembers } from "./validation";
 import type {
   Member,
@@ -82,6 +83,17 @@ export async function submitRegistration(input: {
   const track = PROBLEMS.find((problem) => problem.id === draft.problemId);
   if (!track) {
     throw new RegistrationError("TRACK_UNKNOWN", "Select a mission file before transforming.");
+  }
+
+  /* Fresh read, right before anything is uploaded or written: the deadline
+     may have passed while the form was being filled, or an admin may have
+     closed registrations from the dashboard. firestore.rules enforces the
+     same rule server-side — this check exists so the user gets a clear
+     message instead of a raw permission denial. */
+  const settings = await fetchSiteSettings();
+  const gate = registrationGate(settings);
+  if (!gate.open) {
+    throw new RegistrationError("REGISTRATION_CLOSED", gate.reason ?? "Registration is closed.");
   }
 
   const id = registrationIdFor(draft.emailId);
