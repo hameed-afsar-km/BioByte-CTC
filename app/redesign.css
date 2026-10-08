@@ -374,7 +374,13 @@ body::before {
 }
 
 @media (max-width: 760px) {
-  .hero { min-height: 100svh; padding-top: 7rem; padding-bottom: 5rem; }
+  .hero { 
+    height: auto !important;
+    max-height: none !important;
+    min-height: 100svh !important;
+    padding-top: 7rem !important; 
+    padding-bottom: 5rem !important; 
+  }
   .countdown { gap: 0.5rem !important; }
   .countdown-unit { min-width: 39px !important; }
   .countdown-num { font-size: 2.2rem !important; }
