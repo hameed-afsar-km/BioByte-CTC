@@ -111,28 +111,40 @@ export async function submitRegistration(input: {
 
     try {
       onStatus?.("Uploading mission data...");
-      const formData = new FormData();
-      formData.append("file", draft.ppt);
-      formData.append("pptPath", pptPath);
       
-      const uploadRes = await fetch("/api/upload-ppt", {
-        method: "POST",
-        body: formData
-      });
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      // WARNING: Using the service role key on the client side exposes it to users. 
+      // It is highly recommended to use NEXT_PUBLIC_SUPABASE_ANON_KEY instead 
+      // and configure Storage RLS (Row Level Security) policies in Supabase.
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!;
       
-      if (!uploadRes.ok) {
-        throw new RegistrationError("PPT_UPLOAD_FAILED", `Upload failed: ${await uploadRes.text()}`);
+      // Dynamically import to keep bundle size small if not used everywhere
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { data, error } = await supabase.storage
+        .from("submissions")
+        .upload(pptPath, draft.ppt, {
+          contentType: draft.ppt.type,
+          upsert: true
+        });
+        
+      if (error) {
+        throw new RegistrationError("PPT_UPLOAD_FAILED", `Upload failed: ${error.message}`);
       }
       
-      const uploadData = await uploadRes.json();
-      pptUrl = uploadData.url;
+      const { data: publicUrlData } = supabase.storage
+        .from("submissions")
+        .getPublicUrl(pptPath);
+        
+      pptUrl = publicUrlData.publicUrl;
       
       onStatus?.("Mission data secured.");
     } catch (error) {
       if (error instanceof RegistrationError) throw error;
       throw new RegistrationError(
         "PPT_UPLOAD_FAILED",
-        "The PPT upload was rejected by the server. Check your connection and try again."
+        "The PPT upload failed. Check your connection and try again."
       );
     }
   }
