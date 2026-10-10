@@ -132,7 +132,7 @@ service cloud.firestore {
           && member.course.size() >= 2
           && member.course.size() <= 100
           && member.email is string
-          && member.email.matches('.*@crescent\\.education')
+          && (member.email.matches('.*@crescent\\.education') || member.email.matches('.*@crescenttechnocrats\\.club'))
           && member.phone is string
           && member.phone.size() >= 10
           && member.phone.size() <= 20

@@ -13,8 +13,8 @@ import {
 } from "firebase/firestore";
 
 import { PROBLEMS } from "@/data/site";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "./firebase";
-import { supabase } from "./supabase";
 import { fetchSiteSettings, registrationGate } from "./settings";
 import { cleanMembers } from "./validation";
 import type {
@@ -130,19 +130,13 @@ export async function submitRegistration(input: {
           onStatus?.(`Uploading mission data (${progress}%)`);
         }, 500);
 
-        const { data, error } = await supabase.storage
-          .from('submissions')
-          .upload(pptPath, draft.ppt, {
-            cacheControl: '3600',
-            upsert: true,
-            contentType: contentType,
-          });
+        const pptRef = ref(storage, pptPath);
+        await uploadBytes(pptRef, draft.ppt, {
+          cacheControl: "public, max-age=3600",
+          contentType: contentType,
+        });
 
         clearInterval(interval);
-        
-        if (error) {
-          throw error;
-        }
 
         onStatus?.(`Uploading mission data (100%)`);
       } catch (error) {
@@ -153,8 +147,8 @@ export async function submitRegistration(input: {
       }
       
       onStatus?.("Mission data secured.");
-      const { data: { publicUrl } } = supabase.storage.from('submissions').getPublicUrl(pptPath);
-      pptUrl = publicUrl;
+      const pptRef = ref(storage, pptPath);
+      pptUrl = await getDownloadURL(pptRef);
     } catch (error) {
       if (error instanceof RegistrationError) throw error;
       throw new RegistrationError(
@@ -205,7 +199,8 @@ export async function submitRegistration(input: {
     });
   } catch (error) {
     if (pptPath) {
-      await supabase.storage.from('submissions').remove([pptPath]).catch(() => undefined);
+      const pptRef = ref(storage, pptPath);
+      await deleteObject(pptRef).catch(() => undefined);
     }
     throw error;
   }
@@ -323,7 +318,8 @@ export async function deleteRegistration(id: string, adminEmail: string, teamDet
   /* Storage is not part of the transaction - Firestore would have to hold a
      write lock open across a file upload. A leftover PPT is harmless. */
   if (pptPath) {
-    await supabase.storage.from('submissions').remove([pptPath]).catch(() => undefined);
+    const pptRef = ref(storage, pptPath);
+    await deleteObject(pptRef).catch(() => undefined);
   }
 }
 
