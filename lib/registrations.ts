@@ -130,13 +130,15 @@ export async function submitRegistration(input: {
           onStatus?.(`Uploading mission data (${progress}%)`);
         }, 500);
 
-        const pptRef = ref(storage, pptPath);
-        await uploadBytes(pptRef, draft.ppt, {
-          cacheControl: "public, max-age=3600",
-          contentType: contentType,
-        });
-
-        clearInterval(interval);
+        try {
+          const pptRef = ref(storage, pptPath);
+          await uploadBytes(pptRef, draft.ppt, {
+            cacheControl: "public, max-age=3600",
+            contentType: contentType,
+          });
+        } finally {
+          clearInterval(interval);
+        }
 
         onStatus?.(`Uploading mission data (100%)`);
       } catch (error) {
