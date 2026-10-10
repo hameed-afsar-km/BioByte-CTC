@@ -23,7 +23,7 @@ export const PPT_ACCEPT = ".ppt,.pptx,.pdf";
 const PPT_EXTENSIONS = /\.(ppt|pptx|pdf)$/i;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const PHONE_RE = /^[+()\-\s\d]{6,20}$/;
+const PHONE_RE = /^[+()\-\s\d]{10,20}$/;
 
 export const digitsOnly = (value: string) => value.replace(/\D/g, "");
 
