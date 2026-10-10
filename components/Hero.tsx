@@ -22,6 +22,7 @@ export default function Hero() {
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '3rem', gap: '0.5rem' }}>
+            <span style={{ color: 'var(--color-primary)', fontWeight: 'bold', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>🚨 Registration Deadline Extended till 12 PM Sunday! 🚨</span>
             <DeadlineCountdown />
           </div>
 

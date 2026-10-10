@@ -592,6 +592,11 @@ export default function Registration() {
         </div>
 
         <div className="hud-body">
+          <p className="alert alert-info" role="status" style={{ marginBottom: "1.5rem", border: "1px solid var(--color-primary)", backgroundColor: "rgba(124, 255, 0, 0.05)" }}>
+            <Zap size={17} aria-hidden="true" style={{ color: "var(--color-primary)" }} />
+            <span><strong>🚨 Registration Deadline Extended! 🚨</strong> You can now register and submit your PPT till Sunday 12:00 PM.</span>
+          </p>
+
           {error ? (
             <p className="alert alert-error" role="alert">
               <TriangleAlert size={17} aria-hidden="true" />

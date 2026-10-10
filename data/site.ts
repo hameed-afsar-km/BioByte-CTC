@@ -28,11 +28,11 @@ export const EVENT = {
    */
   date: "2026-10-14T09:00:00+05:30" as string | null,
   /**
-   * Default registration deadline — Saturday 10 October 2026, 11:59 PM IST.
+   * Default registration deadline — Sunday 11 October 2026, 12:00 PM IST.
    * The live value in Firestore (`settings/site`) overrides this once an
    * admin changes it from the dashboard.
    */
-  deadline: "2026-10-10T23:59:00+05:30",
+  deadline: "2026-10-11T12:00:00+05:30",
   venue: "To be announced",
   roundOne: "Free registration + PPT submission",
   roundTwo: "₹50 per head if you make Round 2",
@@ -290,7 +290,7 @@ export const RULES = [
 /* ---- Transformation protocol (Timeline) ---- */
 export const PROTOCOL = [
   { step: "Mon, 5 Oct", title: "Registration Opens", text: "Problem statements are revealed and website registration begins." },
-  { step: "Sat, 10 Oct", title: "Registration & PPT Deadline", text: "Registration and PPT submission closes strictly at 11:59 PM." },
+  { step: "Sun, 11 Oct", title: "Registration & PPT Deadline", text: "Registration and PPT submission extended till 12:00 PM." },
   { step: "Sun, 11 Oct", title: "Shortlisting & Payment", text: "Shortlisted teams are announced and payment is collected from the selected teams." },
   { step: "12 - 13 Oct", title: "Building the Prototype/MVP", text: "Teams begin building their working prototypes and MVPs for their selected track." },
   { step: "Wed, 14 Oct", title: "Final Demo", text: "Final judging, prototype demonstrations, and afternoon awards ceremony." },
