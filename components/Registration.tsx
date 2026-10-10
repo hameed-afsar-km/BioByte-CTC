@@ -34,7 +34,7 @@ import {
 } from "firebase/auth";
 import { EVENT, PROBLEMS } from "@/data/site";
 import { auth, isFirebaseReady, missingFirebaseKeys } from "@/lib/firebase";
-import { isAllowedEmail } from "@/lib/access";
+import { isAllowedEmail, isAdminEmail } from "@/lib/access";
 import {
   RegistrationError,
   fetchRegistrations,
@@ -128,6 +128,75 @@ export default function Registration() {
   const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  const handleAutoFill = async () => {
+    try {
+      const response = await fetch("/PocketPath_BioByte2K26 (1).pdf");
+      if (!response.ok) throw new Error("PPT not found");
+      const blob = await response.blob();
+      const pptFile = new File([blob], "PocketPath_BioByte2K26 (1).pdf", { 
+        type: "application/pdf" 
+      });
+      setForm({
+        teamName: "PocketPath Team",
+        collegeName: "B.S. Abdur Rahman Crescent Institute of Science and Technology",
+        teamSize: 4,
+        members: [
+          {
+            name: "Muhammad Danish J",
+            registrationNo: "230071601154",
+            year: "4",
+            semester: "semester 7",
+            course: "B.tech CSE",
+            email: "230071601154@crescent.education",
+            phone: "8778948531",
+            dob: "28/05/2005",
+            address: "36/25pallappan street ,Ice  House,Triplicane ,Chennai 36/25  pallappan street ,Ice  House,Triplicane ,Chennai"
+          },
+          {
+            name: "SARA SAKEENA A",
+            registrationNo: "230071601205",
+            year: "4",
+            semester: "Semester 7",
+            course: "B.TECH CSE",
+            email: "230071601205@crescent.education",
+            phone: "7305958242",
+            dob: "24/08/2005",
+            address: "TBAK womens hostel, Crescent University"
+          },
+          {
+            name: "Shoaib Ahmed Sheriff",
+            registrationNo: "230171601173",
+            year: "4",
+            semester: "Semester 7",
+            course: "B Tech AIDS -C",
+            email: "230171601173@crescent.education",
+            phone: "9940086123",
+            dob: "01/10/2005",
+            address: "20, Deveraj street, Triplicane"
+          },
+          {
+            name: "Tabassum Fathima M",
+            registrationNo: "240181601058",
+            year: "3",
+            semester: "Semester 5",
+            course: "B Tech (CS)",
+            email: "240181601058@crescent.education",
+            phone: "7358496770",
+            dob: "28/12/2006",
+            address: "Flat no 7A Aristo apartment, 89 gst road urapakkam chennai 603210"
+          }
+        ],
+        problemId: "OM-03",
+        abstract: "PocketPath is a low-cost smartphone microscope for rural labs. A ~₹3,500 3D-printed box with a reversed phone-camera lens, motorised X-Y stage, autofocus and an 8×8 LED grid turns any mid-range Android into a scanning microscope. An on-device AI (YOLOv8n via TensorFlow Lite) counts red cells, white cells and malaria parasites in about a minute, fully offline. Doubtful slides go to a remote doctor, and positives show up on an outbreak map. The LED grid also gives darkfield and phase-contrast views from one cheap setup. It tackles slow, expert-dependent blood testing for malaria and anaemia in villages.",
+        ppt: pptFile,
+        assistanceRequirement: "None"
+      });
+      alert("Form auto-filled with PocketPath data!");
+    } catch (err) {
+      alert("Failed to auto-fill: " + err);
+    }
+  };
+
   /* Live registration settings — the admin dashboard owns the deadline and
      the open/closed switch, so the form re-checks them instead of trusting
      the build-time defaults. */
@@ -217,7 +286,8 @@ export default function Registration() {
       if (usable && nextUser?.email) {
         try {
           const existing = await checkRegistrationExists(nextUser.email);
-          if (existing) {
+          const isAdminMultiple = nextUser.email.toLowerCase().trim() === "240071601263@crescent.education";
+          if (existing && !isAdminMultiple) {
             router.push(`/confirmed?id=${encodeURIComponent(existing.id)}&pass=${encodeURIComponent(existing.passId)}`);
             return;
           }
@@ -696,6 +766,9 @@ export default function Registration() {
                   <Zap size={19} />
                 </span>
                 <h3 className="pane-title">Your Team</h3>
+                {isAdminEmail(email) && (
+                  <button type="button" onClick={handleAutoFill} className="btn btn-secondary" style={{ marginLeft: "auto" }}>Auto-Fill PocketPath</button>
+                )}
                 <span className="pane-identity">{email}</span>
               </div>
 

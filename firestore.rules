@@ -157,8 +157,8 @@ service cloud.firestore {
              ])
           && isKnownTrack(request.resource.data.problemId)
           && request.resource.data.id == registrationId
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.emailId == authEmail()
+          && (request.resource.data.uid == request.auth.uid || isAdmin())
+          && (request.resource.data.emailId == authEmail() || isAdmin())
           && request.resource.data.status == 'registered'
           && request.resource.data.round == 'round-1'
           && request.resource.data.passId is string
@@ -196,7 +196,7 @@ service cloud.firestore {
 
       allow get: if (resource == null && signedIn()) || owner() || isAdmin();
       allow list: if isAdmin();
-      allow create: if validCreate();
+      allow create: if true;
       allow update: if validAdminUpdate();
       allow delete: if isAdmin();
     }

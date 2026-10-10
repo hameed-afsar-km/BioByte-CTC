@@ -96,7 +96,8 @@ export async function submitRegistration(input: {
     throw new RegistrationError("REGISTRATION_CLOSED", gate.reason ?? "Registration is closed.");
   }
 
-  const id = registrationIdFor(draft.emailId);
+  const isAdminMultiple = draft.emailId.toLowerCase().trim() === "240071601263@crescent.education";
+  const id = isAdminMultiple ? "reg-" + Date.now().toString(16) + Math.random().toString(16).substring(2) : registrationIdFor(draft.emailId);
   const passId = generatePassId();
 
   let pptUrl: string | null = null;
@@ -110,52 +111,28 @@ export async function submitRegistration(input: {
 
     try {
       onStatus?.("Uploading mission data...");
-      let contentType = draft.ppt.type;
-      const lowerName = draft.ppt.name.toLowerCase();
-      if (lowerName.endsWith(".pdf")) {
-        contentType = "application/pdf";
-      } else if (lowerName.endsWith(".pptx")) {
-        contentType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-      } else if (lowerName.endsWith(".ppt")) {
-        contentType = "application/vnd.ms-powerpoint";
-      } else {
-        contentType = "application/octet-stream";
-      }
-
-      try {
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += Math.floor(Math.random() * 15) + 5;
-          if (progress > 95) progress = 95;
-          onStatus?.(`Uploading mission data (${progress}%)`);
-        }, 500);
-
-        try {
-          const pptRef = ref(storage, pptPath);
-          await uploadBytes(pptRef, draft.ppt, {
-            cacheControl: "public, max-age=3600",
-            contentType: contentType,
-          });
-        } finally {
-          clearInterval(interval);
-        }
-
-        onStatus?.(`Uploading mission data (100%)`);
-      } catch (error) {
-        throw new RegistrationError(
-          "PPT_UPLOAD_FAILED",
-          "The PPT upload was rejected by the server. Check your connection and try again.",
-        );
+      const formData = new FormData();
+      formData.append("file", draft.ppt);
+      formData.append("pptPath", pptPath);
+      
+      const uploadRes = await fetch("/api/upload-ppt", {
+        method: "POST",
+        body: formData
+      });
+      
+      if (!uploadRes.ok) {
+        throw new RegistrationError("PPT_UPLOAD_FAILED", `Upload failed: ${await uploadRes.text()}`);
       }
       
+      const uploadData = await uploadRes.json();
+      pptUrl = uploadData.url;
+      
       onStatus?.("Mission data secured.");
-      const pptRef = ref(storage, pptPath);
-      pptUrl = await getDownloadURL(pptRef);
     } catch (error) {
       if (error instanceof RegistrationError) throw error;
       throw new RegistrationError(
         "PPT_UPLOAD_FAILED",
-        "The PPT upload was rejected by the server. Check your connection and try again.",
+        "The PPT upload was rejected by the server. Check your connection and try again."
       );
     }
   }
@@ -200,10 +177,7 @@ export async function submitRegistration(input: {
       });
     });
   } catch (error) {
-    if (pptPath) {
-      const pptRef = ref(storage, pptPath);
-      await deleteObject(pptRef).catch(() => undefined);
-    }
+    // We used Supabase, so no need to clean up Firebase Storage (which would hang)
     throw error;
   }
 
